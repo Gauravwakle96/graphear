@@ -4,6 +4,57 @@ import { testAnalysis, testSources } from '../packages/core/src/study.test-suppo
 import type { LearningSession } from '../apps/web/src/lib/learning-api';
 import { gradeStudyTest } from '../packages/core/src/study';
 const fixtureId = '6a29e291-4855-412f-9dc3-e6db567b6a77';
+test('a supported public YouTube URL can be submitted without a pasted transcript', async ({
+  page,
+}) => {
+  await prepared(page);
+  await page.route('**/api/learning/config', (route) =>
+    route.fulfill({
+      json: {
+        provider: 'gemini',
+        providerLabel: 'Gemini',
+        model: 'test-only',
+        configured: true,
+        available: true,
+        freeTier: true,
+        captionsConfigured: false,
+        youtubeDirectConfigured: true,
+        limits: {
+          uploadMB: 20,
+          documentMB: 20,
+          mediaMinutes: 5,
+          youtubeMinutes: 30,
+          pdfPages: 50,
+          retentionHours: 168,
+        },
+        privacy: 'Test only',
+      },
+    }),
+  );
+  await page.reload();
+  await page.getByRole('button', { name: 'New session', exact: true }).click();
+  await page.getByRole('button', { name: 'YouTube video', exact: true }).click();
+  await page
+    .getByLabel('YouTube URL', { exact: true })
+    .fill('https://www.youtube.com/watch?v=abcdefghijk');
+  await page.getByRole('checkbox', { name: /I’m authorized/ }).check();
+  await expect(
+    page.getByRole('button', { name: 'Create learning session', exact: true }),
+  ).toBeEnabled();
+  await expect(
+    page.getByText('Add a transcript to generate notes.', { exact: false }),
+  ).not.toBeVisible();
+  let request = '';
+  await page.route('**/api/learning', async (route) => {
+    if (route.request().method() === 'POST') {
+      request = route.request().postData() ?? '';
+      await route.fulfill({ status: 201, json: session() });
+    } else await route.fulfill({ json: { sessions: [{ ...session(), category: 'network' }] } });
+  });
+  await page.getByRole('button', { name: 'Create learning session', exact: true }).click();
+  await expect(page.getByRole('heading', { name: session().analysis!.title })).toBeVisible();
+  expect(request).toContain('https://www.youtube.com/watch?v=abcdefghijk');
+});
 test('AI changes stay in preview until accepted and explicitly saved', async ({ page }) => {
   const completed = session();
   const initial = { ...completed, status: 'failed' as string, analysis: null } as LearningSession;

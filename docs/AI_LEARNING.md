@@ -54,6 +54,14 @@ coverage and receive focused checks of up to three cited diagrams; failed figure
 checks omit that diagram with a warning while retaining validated notes/questions.
 These checks do not prove factual accuracy.
 
+Public YouTube inputs use sequential bounded Gemini video intervals, public
+duration metadata when available, and validated timestamped component/relationship
+inventories. Detailed notes must cover substantive source topics. Missing
+explanations receive focused correction without regenerating all outputs;
+missing diagram components receive an inventory-based reconstruction. A readable
+overview and a complete diagram may be shown together. See
+[SOURCE_FIDELITY_UPDATE.md](SOURCE_FIDELITY_UPDATE.md) for actual evidence and limits.
+
 ### Local FreeLLMAPI gateway
 
 The compatible adapter supports the supplied local gateway and both its
@@ -100,16 +108,16 @@ an AI provider.
 
 ## Implemented workflows
 
-| Input            | Processing                                                                                     | Source references                          |
-| ---------------- | ---------------------------------------------------------------------------------------------- | ------------------------------------------ |
-| PNG/JPEG/WEBP    | Magic-byte checks, image normalization, vision/OCR and structured analysis                     | Uploaded image                             |
-| PDF              | Text extraction plus bounded page rendering; vision OCR for scanned pages                      | Physical page and text continuation        |
-| DOCX             | Text and embedded raster images                                                                | Document sections; not physical pages      |
-| PPTX             | Slide text and embedded raster images                                                          | Slide number; embedded images are separate |
-| MP3/WAV/M4A      | Local mono WAV segments, provider transcription                                                | Coarse recording intervals                 |
-| MP4/MOV/WEBM/MKV | Audio processing, representative frames and visual scene-change candidates                     | Frame times and recording intervals        |
-| YouTube URL      | Public URL validation, permitted metadata/captions or supplied transcript/authorized recording | Caption intervals when available           |
-| Pasted text      | Bounded source sections, structured analysis                                                   | Text sections                              |
+| Input            | Processing                                                                                                    | Source references                          |
+| ---------------- | ------------------------------------------------------------------------------------------------------------- | ------------------------------------------ |
+| PNG/JPEG/WEBP    | Magic-byte checks, image normalization, vision/OCR and structured analysis                                    | Uploaded image                             |
+| PDF              | Text extraction plus bounded page rendering; vision OCR for scanned pages                                     | Physical page and text continuation        |
+| DOCX             | Text and embedded raster images                                                                               | Document sections; not physical pages      |
+| PPTX             | Slide text and embedded raster images                                                                         | Slide number; embedded images are separate |
+| MP3/WAV/M4A      | Local mono WAV segments, provider transcription                                                               | Coarse recording intervals                 |
+| MP4/MOV/WEBM/MKV | Audio processing, representative frames and visual scene-change candidates                                    | Frame times and recording intervals        |
+| YouTube URL      | Public URL validation, Gemini interval analysis, permitted metadata/captions or supplied transcript/recording | Validated topic/caption intervals          |
+| Pasted text      | Bounded source sections, structured analysis                                                                  | Text sections                              |
 
 TXT/Markdown notes and VTT/SRT subtitles are also supported, limited to 1 MB,
 valid UTF-8 and 180,000 characters. Caption uploads and timestamped pasted
@@ -117,11 +125,13 @@ transcripts retain supplied times. Select learning level, study goal, preferred
 notes, quiz difficulty and question count before upload. These preferences guide
 the analysis and are saved with the session.
 
-A YouTube URL without permitted caption access can be saved as a draft. Paste or
-attach an authorized transcript, or attach a recording you have permission to
-process. A saved unprocessed YouTube draft can receive pasted text through its
-source form. Adding a transcript makes no AI call. URL-only automatic processing
-of arbitrary public videos is not available without appropriate caption rights.
+Configured Gemini supports public URL-only video analysis through its official
+video-input API, bounded by `LEARNING_YOUTUBE_MINUTES` (30 by default).
+Other providers need permitted captions or an authorized transcript/recording.
+A saved unprocessed YouTube draft can receive pasted text through its source
+form. Adding a transcript makes no AI call. Model-generated video observations
+are explicitly distinguished from official captions. See
+[the source-fidelity update](SOURCE_FIDELITY_UPDATE.md).
 
 Generated material includes detailed, short and exam notes; marked additional
 explanations and uncertainty; topic references; source-grounded tables;
@@ -215,7 +225,9 @@ audio-to-learning jobs succeeded on authorized synthetic sources. Exact image
 labels and arrow direction were checked; audio questions were submitted and
 scored by the real API. Live video extraction and transcription succeeded, but
 generation failed validation or encountered upstream unavailability/quota.
-Gemini audio/video generation has not been live-verified successfully. Representative
+Gemini uploaded audio/video generation has not been live-verified successfully.
+Public YouTube URL-only learning is separately live-verified in the latest
+[release report](RELEASE_VERIFICATION.md). Representative
 handwriting and subject-level accuracy remain unverified. See
 [the workflow report](LEARNING_WORKFLOW_UPGRADE.md) and
 [the release report](RELEASE_VERIFICATION.md). Automated HTTP
@@ -226,7 +238,8 @@ Office vector drawings, slide animations and physical DOCX page layout are not
 reconstructed. Videos use representative/scene-change candidates, which can miss
 important content; timestamps are genuine frame times but audio citations are
 three-minute intervals. Public YouTube URLs alone do not grant caption download
-rights: backend OAuth must have appropriate permission, otherwise supply a
+rights: backend OAuth must have appropriate permission. Gemini can instead read
+supported public videos through its official video API; other providers need a
 transcript or authorized recording. No restricted downloader is included.
 
 Production internet exposure still needs deployment review, appropriate provider

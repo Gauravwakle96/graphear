@@ -1,6 +1,61 @@
 import type { AIConfig } from '../ai/config';
 import type { Source } from '@graphear/core';
-import { timestamp } from '@graphear/core';
+import { timestamp, sourceRelationSchema, sourceOrderSchema } from '@graphear/core';
+import { z } from 'zod';
+export function youtubeObservationsSchema(seconds: number, start = 0) {
+  return z
+    .object({
+      available: z.boolean(),
+      durationSeconds: z.number().positive().max(86400).nullable(),
+      sections: z
+        .array(
+          z
+            .object({
+              start: z.number().min(start).max(seconds),
+              end: z.number().positive().min(start).max(seconds),
+              text: z.string().trim().min(1).max(16000),
+              concepts: z.array(z.string().trim().min(1).max(250)).max(40).optional(),
+              relationships: z.array(sourceRelationSchema).max(50).optional(),
+              orders: z.array(sourceOrderSchema).max(8),
+            })
+            .strict(),
+        )
+        .max(40),
+      warnings: z.array(z.string().max(600)).max(12),
+    })
+    .strict();
+}
+export function validateYoutubeObservations(
+  value: unknown,
+  seconds: number,
+  start = 0,
+  confirmedDuration?: number | null,
+) {
+  const observed = youtubeObservationsSchema(seconds, start).parse(value);
+  if (!observed.available || !observed.sections.length)
+    throw new Error(
+      'The public video could not be read. Supply an authorized transcript or recording.',
+    );
+  const end = Math.min(seconds, confirmedDuration ?? observed.durationSeconds ?? seconds);
+  if (
+    observed.sections.some(
+      (v, i) =>
+        v.end <= v.start || v.end > end || (i > 0 && v.start < observed.sections[i - 1].end),
+    )
+  )
+    throw new Error(
+      'Video topic timestamps are invalid or overlap; no generated material was saved.',
+    );
+  return observed;
+}
+export function youtubeIntervals(seconds: number, jobCalls: number) {
+  // Reserve room for analysis, diagram refinement and their bounded repairs.
+  const count = Math.min(Math.ceil(seconds / 360), Math.max(1, Math.min(6, jobCalls - 4)));
+  return Array.from({ length: count }, (_, i) => ({
+    start: Math.floor((i * seconds) / count),
+    end: Math.floor(((i + 1) * seconds) / count),
+  }));
+}
 export function youtubeId(value: string) {
   let url: URL;
   try {
@@ -164,6 +219,44 @@ export async function youtubeMetadata(id: string, config: AIConfig) {
       }
     } catch {
       /* Keep an explicitly unknown duration. */
+    }
+  }
+  if (duration === null) {
+    // Read only the public schema.org duration metadata. No media URLs,
+    // caption endpoints, cookies or access-control workarounds are used.
+    try {
+      const response = await fetch(watch, {
+        redirect: 'error',
+        signal: AbortSignal.timeout(10000),
+      });
+      if (response.ok && response.headers.get('content-type')?.includes('text/html')) {
+        const reader = response.body?.getReader();
+        if (reader) {
+          const chunks: Uint8Array[] = [];
+          let size = 0;
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            size += value.length;
+            if (size > 2_000_000) {
+              await reader.cancel();
+              break;
+            }
+            chunks.push(value);
+          }
+          const html = Buffer.concat(chunks).toString('utf8');
+          const tag = html.match(/<meta\s[^>]*itemprop=["']duration["'][^>]*>/i)?.[0];
+          const value = tag?.match(/content=["']([^"']+)["']/i)?.[1];
+          const match = value?.match(/^PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?$/);
+          if (match) {
+            const actual =
+              Number(match[1] ?? 0) * 3600 + Number(match[2] ?? 0) * 60 + Number(match[3] ?? 0);
+            if (actual > 0 && actual <= 86400) duration = actual;
+          }
+        }
+      }
+    } catch {
+      /* Unavailable public metadata remains explicitly unknown. */
     }
   }
   return { title, embed, duration, url: watch };

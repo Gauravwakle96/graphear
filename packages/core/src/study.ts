@@ -6,6 +6,31 @@ const id = z
   .regex(/^[a-zA-Z0-9_-]+$/);
 const text = z.string().trim().min(1).max(4000);
 const evidence = z.array(id).max(20);
+export const sourceRelationSchema = z
+  .object({
+    source: z.string().trim().min(1).max(250),
+    target: z.string().trim().min(1).max(250),
+    relation: z.enum([
+      'flow',
+      'connection',
+      'message',
+      'association',
+      'dependency',
+      'contains',
+      'is-a',
+      'electrical',
+    ]),
+    direction: z.enum(['forward', 'both', 'none']),
+  })
+  .strict();
+export const sourceOrderSchema = z
+  .object({
+    label: z.string().trim().min(1).max(250),
+    components: z.array(z.string().trim().min(1).max(250)).min(2).max(40),
+    relation: z.enum(['flow', 'association']),
+    direction: z.enum(['forward', 'none']),
+  })
+  .strict();
 export const categorySchema = z.enum([
   'flowchart',
   'mindmap',
@@ -27,6 +52,10 @@ export const sourceSchema = z
     reference: z.string().max(150),
     kind: z.enum(['text', 'page', 'slide', 'image', 'audio', 'frame', 'transcript']),
     text: z.string().max(16000),
+    visualLabels: z.array(z.string().trim().min(1).max(250)).max(80).optional(),
+    conceptLabels: z.array(z.string().trim().min(1).max(250)).max(80).optional(),
+    conceptRelations: z.array(sourceRelationSchema).max(100).optional(),
+    conceptOrders: z.array(sourceOrderSchema).max(12).optional(),
     page: z.number().int().positive().nullable(),
     start: z.number().nonnegative().nullable(),
     end: z.number().nonnegative().nullable(),
@@ -192,18 +221,51 @@ export type StudyNode = z.infer<typeof studyNodeSchema>;
 export type StudyOptions = z.infer<typeof optionsSchema>;
 export type StudyQuestion = z.infer<typeof questionSchema>;
 export type TutorAnswer = z.infer<typeof tutorSchema>;
+export function studyOverview(diagram: StudyDiagram): StudyDiagram | null {
+  const nodes = diagram.nodes.filter((n) => n.methods.length > 0);
+  if (diagram.kind === 'mindmap' || nodes.length < 2 || nodes.length === diagram.nodes.length)
+    return null;
+  const ids = new Set(nodes.map((n) => n.id));
+  const edges = diagram.edges.filter((e) => ids.has(e.source) && ids.has(e.target));
+  if (!edges.length) return null;
+  return {
+    ...diagram,
+    id: diagram.id.slice(0, 71) + '-overview',
+    title: diagram.title.slice(0, 169) + ' · Overview',
+    description:
+      diagram.description.slice(0, 3800) +
+      ' This overview shows the explained primary components; the complete diagram retains the remaining inventoried concepts.',
+    nodes,
+    edges,
+  };
+}
+export function substantialStudySources(sources: Source[]) {
+  const length = sources.reduce((n, src) => n + src.text.length, 0);
+  return (
+    sources.length >= 5 &&
+    (length >= 6000 ||
+      sources.filter((s) => s.kind === 'transcript' && s.text.length >= 80).length >= 5)
+  );
+}
 export function studyGenerationSchema(options: StudyOptions, sources: Source[]) {
-  const substantial =
-    sources.length >= 5 && sources.reduce((n, src) => n + src.text.length, 0) >= 6000;
+  const substantial = substantialStudySources(sources);
+  const expandedImage =
+    options.noteStyle === 'detailed' &&
+    options.diagramDetail === 'expanded' &&
+    sources.some((s) => s.kind === 'image');
+  const detailedMaterial =
+    sources.reduce((n, s) => n + s.text.length, 0) >= 2000 ||
+    new Set(sources.flatMap((s) => s.conceptLabels ?? [])).size >= 6;
   return analysisSchema.extend({
-    notes: substantial
-      ? analysisSchema.shape.notes.extend({
-          detailed: z
-            .array(section.extend({ items: section.shape.items.min(2) }))
-            .min(6)
-            .max(18),
-        })
-      : analysisSchema.shape.notes,
+    notes:
+      substantial || expandedImage || detailedMaterial
+        ? analysisSchema.shape.notes.extend({
+            detailed: z
+              .array(section.extend({ items: section.shape.items.min(2) }))
+              .min(substantial ? 6 : 4)
+              .max(18),
+          })
+        : analysisSchema.shape.notes,
     questions: z.array(questionSchema).length(options.questionCount),
   });
 }
@@ -263,6 +325,13 @@ export function validateDiagram(value: unknown, sourceIds: Set<string>) {
       throw new Error('Diagram component has no source reference or uncertainty warning');
   }
   for (const e of d.edges) {
+    if (
+      e.relation === 'contains' &&
+      /^(stack[- ]?order|data[- ]?(flow|exchange)|next[- ]?step|sequence)$/i.test(e.label.trim())
+    )
+      throw new Error(
+        'A sequence or data-flow relationship cannot use whole-part containment. Use flow for data movement or association for conceptual order.',
+      );
     if (edges.has(e.id) || !nodes.has(e.source) || !nodes.has(e.target))
       throw new Error('Invalid diagram connection');
     edges.add(e.id);
@@ -319,6 +388,131 @@ export function validateAnalysis(value: unknown, sources: Source[]) {
   for (const t of a.topics) validateEvidence(t.evidence, ids);
   for (const o of a.sourceObservations) validateEvidence([o.sourceId], ids);
   for (const d of a.diagrams) d.reviewed = false;
+  return a;
+}
+// Inventory matching checks coverage, not factual or scientific correctness.
+export function validateVisualCoverage(
+  a: StudyAnalysis,
+  sources: Source[],
+  options: StudyOptions,
+  scope: 'all' | 'notes' | 'diagrams' = 'all',
+) {
+  const normalize = (v: string) =>
+    v
+      .toLowerCase()
+      .replace(/[^\p{L}\p{N}]+/gu, ' ')
+      .trim();
+  const diagrams = a.diagrams.flatMap((d) => d.nodes.map((n) => normalize(n.label)));
+  const notes = a.notes[options.noteStyle].flatMap((s) =>
+    s.items.map((item) => normalize(item.text)),
+  );
+  const includesLabel = (items: string[], label: string) => {
+    const words = normalize(label).split(' ');
+    const singular = (word: string) => {
+      if (word === 'media') return 'medium';
+      if (word.endsWith('ies')) return word.slice(0, -3) + 'y';
+      if (/(sses|shes|ches|xes|zes)$/.test(word)) return word.slice(0, -2);
+      return word.length > 3 && word.endsWith('s') && !word.endsWith('ss')
+        ? word.slice(0, -1)
+        : word;
+    };
+    return items.some((item) =>
+      words.every((word) => item.split(' ').some((w) => singular(w) === singular(word))),
+    );
+  };
+  const warnings = [...a.warnings, ...a.diagrams.flatMap((d) => d.warnings)]
+    .filter((w) => /omitt|unreadable|illegible|unavailable|not visible/i.test(w))
+    .map(normalize);
+  const missing = sources.flatMap((s) =>
+    [...(s.visualLabels ?? []), ...(s.conceptLabels ?? [])].flatMap((label) => {
+      const key = normalize(label);
+      if (warnings.some((w) => w.includes(key))) return [];
+      const areas = [
+        ...(scope !== 'diagrams' && options.noteStyle === 'detailed' && !includesLabel(notes, label)
+          ? ['detailed notes']
+          : []),
+        ...(scope !== 'notes' &&
+        options.diagramDetail !== 'simple' &&
+        !includesLabel(diagrams, label)
+          ? ['diagrams']
+          : []),
+      ];
+      return areas.length ? [`${label} (${areas.join(', ')})`] : [];
+    }),
+  );
+  if (missing.length)
+    throw new Error(
+      'Source coverage is incomplete. Include these inventoried components or explicitly identify unreadable/omitted items in warnings: ' +
+        [...new Set(missing)].join('; '),
+    );
+  if (scope !== 'diagrams' && options.noteStyle === 'detailed') {
+    const cited = new Set(a.notes.detailed.flatMap((s) => s.items.flatMap((i) => i.evidence)));
+    const omittedTopics = sources.filter(
+      (s) => s.kind === 'transcript' && s.text.trim().length >= 80 && !cited.has(s.id),
+    );
+    if (omittedTopics.length)
+      throw new Error(
+        'Detailed notes omitted source topics: ' + omittedTopics.map((s) => s.id).join(', '),
+      );
+  }
+  if (scope !== 'notes') {
+    const relationships = sources.flatMap((s) => [
+      ...(s.conceptRelations ?? []),
+      ...(s.conceptOrders ?? []).flatMap((order) =>
+        order.components.slice(1).map((target, i) => ({
+          source: order.components[i],
+          target,
+          relation: order.relation,
+          direction: order.direction,
+        })),
+      ),
+    ]);
+    const absent = relationships.filter(
+      (r) =>
+        !a.diagrams.some((d) => {
+          const from = d.nodes.filter((n) => includesLabel([normalize(n.label)], r.source));
+          const to = d.nodes.filter((n) => includesLabel([normalize(n.label)], r.target));
+          // A conceptual mind map may organize a process under a common topic.
+          // Preserve the actual direct relationships in other requested formats.
+          if (d.kind === 'mindmap') {
+            const adjacent = new Map(d.nodes.map((n) => [n.id, new Set<string>()]));
+            d.edges.forEach((e) => {
+              adjacent.get(e.source)?.add(e.target);
+              adjacent.get(e.target)?.add(e.source);
+            });
+            return from.some((f) => {
+              const seen = new Set<string>(),
+                pending = [f.id];
+              while (pending.length) {
+                const id = pending.pop()!;
+                if (seen.has(id)) continue;
+                seen.add(id);
+                pending.push(...(adjacent.get(id) ?? []));
+              }
+              return to.some((t) => seen.has(t.id));
+            });
+          }
+          return d.edges.some(
+            (e) =>
+              (from.some((n) => n.id === e.source) &&
+                to.some((n) => n.id === e.target) &&
+                e.relation === r.relation &&
+                (r.direction === 'none' ||
+                  e.direction === r.direction ||
+                  e.direction === 'both')) ||
+              (r.direction !== 'forward' &&
+                e.relation === r.relation &&
+                to.some((n) => n.id === e.source) &&
+                from.some((n) => n.id === e.target)),
+          );
+        }),
+    );
+    if (absent.length)
+      throw new Error(
+        'Diagram omitted source relationships: ' +
+          absent.map((r) => `${r.source} → ${r.target} (${r.relation})`).join('; '),
+      );
+  }
   return a;
 }
 export function validateTutor(value: unknown, sources: Source[]) {

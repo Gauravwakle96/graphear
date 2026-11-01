@@ -24,6 +24,7 @@
   }
 }
 :root {
+  --image-import-preview-height: 320px;
   font-family: 'Manrope', sans-serif;
   color: #203b32;
   background: #f5f7f3;
@@ -46,6 +47,48 @@
   --selection: #e7f1ff;
   color-scheme: light;
   font-size: 16px;
+}
+.image-import-preview {
+  width: 100%;
+  max-height: var(--image-import-preview-height);
+  object-fit: contain;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+.import-choice-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 24px;
+}
+.ocr-source-view {
+  padding: 24px;
+}
+.ocr-source-view > img {
+  width: 100%;
+  max-height: 600px;
+  object-fit: contain;
+  background: #fff;
+}
+.ocr-label-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  margin-top: 24px;
+}
+.ocr-label-list button {
+  padding: 14px;
+  text-align: left;
+  overflow-wrap: anywhere;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+.ocr-label-list button[aria-pressed='true'] {
+  border-color: var(--focus);
+  background: var(--selection);
 }
 :root[data-theme='dark'] {
   --ground: #14241d;
@@ -1726,6 +1769,17 @@ progress {
   padding: 3px 8px;
   white-space: nowrap;
   pointer-events: none;
+}
+.study-canvas-actions {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+  max-width: calc(100% - 24px);
+  z-index: 4;
 }
 .selected-step .step-kind {
   margin: 12px 0 0;

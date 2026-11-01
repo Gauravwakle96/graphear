@@ -49,7 +49,8 @@ import { Compare } from './features/Compare';
 import { Library } from './features/Library';
 import { Practice } from './features/Practice';
 import { Guide } from './features/Guide';
-import { importFile, type Imported } from './lib/import';
+import { importFile, validateRasterFile, type Imported } from './lib/import';
+import { ImageImportChoice } from './features/ImageImportChoice';
 import { saveLocal, download, filename } from './lib/storage';
 import { saveRemote, publishRemote, revokeRemote, getShared } from './lib/api';
 import { learningPack } from './lib/export';
@@ -90,6 +91,7 @@ export default function App() {
     [saved, setSaved] = useState<Saved | undefined>(),
     [image, setImage] = useState<string | undefined>('/examples/scholarship.svg'),
     [aiSource, setAISource] = useState<File | null>(null),
+    [pendingImage, setPendingImage] = useState<File | null>(null),
     [assistantOpen, setAssistantOpen] = useState(false),
     [notes, setNotes] = useState<string[]>([]),
     [theme, setTheme] = useState(initialTheme),
@@ -314,6 +316,21 @@ export default function App() {
       abort.current = null;
       if (fileInput.current) fileInput.current.value = '';
       if (baselineInput.current) baselineInput.current.value = '';
+    }
+  };
+  const chooseImport = async (file: File) => {
+    if (importing) return;
+    if (!/\.(png|jpe?g|webp)$/i.test(file.name)) return handleImport(file);
+    setImporting(true);
+    setProgress({ text: 'Checking original image', value: 0 });
+    try {
+      await validateRasterFile(file);
+      setPendingImage(file);
+    } catch (e) {
+      setMessage(e instanceof Error ? e.message : 'This image could not be read.');
+    } finally {
+      setImporting(false);
+      if (fileInput.current) fileInput.current.value = '';
     }
   };
   const exportFile = (kind: 'json' | 'text' | 'html' | 'svg') => {
@@ -690,6 +707,7 @@ export default function App() {
                   style={{ '--diagram-zoom': zoom } as React.CSSProperties}
                 >
                   <GraphCanvas
+                    image={image}
                     graph={graph}
                     selectedId={selectedId}
                     path={path}
@@ -803,12 +821,25 @@ export default function App() {
       <input
         ref={fileInput}
         type="file"
-        accept=".json,.svg,.png,.jpg,.jpeg"
+        accept=".json,.svg,.png,.jpg,.jpeg,.webp"
         className="hidden-input"
         aria-label="Import diagram file"
         onChange={(e) => {
           const file = e.target.files?.[0];
-          if (file) void handleImport(file);
+          if (file) void chooseImport(file);
+        }}
+      />
+      <ImageImportChoice
+        file={pendingImage}
+        onClose={() => setPendingImage(null)}
+        onAI={(file) => {
+          setPendingImage(null);
+          setAISource(file);
+          navigate('learning');
+        }}
+        onLocal={(file) => {
+          setPendingImage(null);
+          void handleImport(file);
         }}
       />
       <input

@@ -9,6 +9,8 @@ import {
   type Node,
   type Edge,
   MarkerType,
+  useReactFlow,
+  useNodesInitialized,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import {
@@ -60,6 +62,35 @@ function StudyNode({ data }: NodeProps<DiagramNode>) {
   );
 }
 const nodeTypes = { study: StudyNode };
+function DiagramViewControls({ selected }: { selected: string }) {
+  const { fitView } = useReactFlow();
+  return (
+    <div className="study-canvas-actions">
+      <Button
+        onClick={() =>
+          void fitView({ nodes: [{ id: selected }], padding: 0.4, minZoom: 0.7, maxZoom: 1.1 })
+        }
+      >
+        Focus selected component
+      </Button>
+      <Button onClick={() => void fitView({ padding: 0.2, minZoom: 0.15, maxZoom: 1.1 })}>
+        Fit whole diagram
+      </Button>
+    </div>
+  );
+}
+function FitDiagram({ revision }: { revision: string }) {
+  const { fitView } = useReactFlow();
+  const initialized = useNodesInitialized();
+  useEffect(() => {
+    if (!initialized) return;
+    const frame = requestAnimationFrame(() => {
+      void fitView({ padding: 0.2, minZoom: 0.05, maxZoom: 1.1 });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [initialized, revision, fitView]);
+  return null;
+}
 function Notation({ diagram }: { diagram: StudyDiagram }) {
   const [markup, setMarkup] = useState(''),
     [error, setError] = useState('');
@@ -334,7 +365,13 @@ export function DiagramEditor({
             maxZoom={2}
             proOptions={{ hideAttribution: true }}
           >
+            <FitDiagram
+              revision={JSON.stringify(
+                positioned.nodes.map((n) => [n.id, n.label, n.position, n.attributes, n.methods]),
+              )}
+            />
             <Background />
+            <DiagramViewControls selected={selected} />
             <Controls showInteractive={false} />
           </ReactFlow>
         </div>

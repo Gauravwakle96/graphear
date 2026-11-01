@@ -143,10 +143,11 @@ try {
       mimeType: 'image/png',
       buffer: Buffer.from(raster, 'base64'),
     });
+  await page.getByRole('button', { name: 'Extract text locally', exact: true }).click();
   await page
     .getByRole('heading', { name: 'Check the source', exact: true })
     .waitFor({ timeout: 60_000 });
-  await page.getByText(/geometric suggestions, not verified arrow/).waitFor();
+  await page.getByText(/Local OCR extracted text only; no arrows/).waitFor();
   assert.deepEqual(errors, [], 'No runtime exceptions');
   console.log(
     'PASS production: static frontend, CSP/headers, Secure HttpOnly SameSite cookie, share creation, offline reload/navigation, private Learning draft creation/deletion without AI calls, real raster OCR under CSP, no cached API or runtime exceptions.',

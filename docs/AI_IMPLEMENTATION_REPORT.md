@@ -1,5 +1,10 @@
 # AI learning implementation report
 
+The latest fixes and actual owner-image/public-video evidence are in
+[SOURCE_FIDELITY_UPDATE.md](SOURCE_FIDELITY_UPDATE.md). Gemini now supports bounded
+public YouTube URL-only analysis; older caption-only limitations below describe
+the earlier implementation.
+
 The latest diagram reconstruction, NoteGPT-style learning studio, contextual AI
 preview and checklist changes are documented in [AI_WORKSPACE_UPGRADE.md](AI_WORKSPACE_UPGRADE.md).
 Current tests and actual Gemini evidence are in [RELEASE_VERIFICATION.md](RELEASE_VERIFICATION.md).
@@ -17,8 +22,9 @@ a source-linked draft diagram and five questions each. A public text lesson
 preserved both request/response directions, rendered notes/diagrams and passed
 timed-quiz scoring. Earlier FreeLLMAPI text, image and audio learning succeeded;
 video extraction worked but full generation failed validation or availability.
-Gemini audio/video remains unverified end to end. YouTube
-needs permitted captions or an authorized supplied transcript/recording.
+Gemini uploaded audio/video remains unverified end to end. Public YouTube
+URL-only learning now uses Gemini's official video input; permitted captions
+or supplied transcripts/recordings remain the alternatives for other providers.
 The latest increment adds uploaded text/subtitles, learner preferences, saved
 YouTube transcript drafts, timed tests and source-topic revision feedback.
 Generation now enforces requested question counts and broader long-document
@@ -42,7 +48,7 @@ use explicitly synthetic responses and must not be presented as live AI results.
 | PDF            | Text extraction, real page rendering and scanned-page vision OCR, page references                                        | Bounded to 50 pages; representative figures may be omitted                                                 |
 | DOCX/PPTX      | Text, embedded raster images, section/slide references                                                                   | Office vector drawings/animations and DOCX physical pagination not reconstructed                           |
 | Audio/video    | Local FFmpeg extraction, segmented transcription, representative frames and genuine scene-change times                   | No full-video API upload; coarse audio intervals and sampled scenes can miss content                       |
-| YouTube        | URL validation, official metadata/caption access, supplied transcript or authorized recording fallback                   | Caption download needs appropriate OAuth rights; no restricted downloader                                  |
+| YouTube        | URL validation, public metadata, Gemini interval analysis, permitted captions or supplied transcript/recording fallback  | Caption downloads need appropriate OAuth rights; no restricted downloader                                  |
 | Diagrams       | Validated JSON, category-specific data, React Flow editor, ELK layout, Mermaid-compatible notation, escaped SVG          | Circuit/UML/scientific details use custom schematics; no claim of validated anatomy or circuit correctness |
 | Notes          | Detailed, short and exam formats; definitions, explanations, components, applications, tables, citations and uncertainty | Additional explanations marked separately; citations do not prove factual accuracy                         |
 | Tutor          | Questions about stored source material and notes, cited answers, optional additional diagrams, chat history              | One real gateway client/server answer checked; representative tutoring remains unverified                  |
@@ -118,7 +124,8 @@ Application API credentials are separate from Codex login credentials.
 
 For official YouTube metadata, optionally configure `YOUTUBE_API_KEY`. Caption
 downloads additionally require `YOUTUBE_OAUTH_TOKEN` with permission for that
-video. A public URL alone is insufficient. Otherwise supply an authorized
+video. Caption download requires those rights; Gemini public-video analysis uses
+its official video-input API instead. Other providers need an authorized
 transcript or recording; private-video restrictions and platform controls are not
 bypassed. Set provider spending limits before running generation or evaluation.
 

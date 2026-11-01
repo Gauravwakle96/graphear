@@ -15,7 +15,8 @@ controls, reduced motion and source-review warnings.
 1. Import an image in the original workspace and select **Structure image with
    AI**, or choose **Open AI reconstruction** in source review. The normalized
    raster is handed to the learning form in browser memory. Nothing is uploaded
-   by this handoff. Existing local OCR remains a geometric draft.
+   by this handoff. Raster imports now offer **Reconstruct with AI** or
+   **Extract text locally**; local OCR creates no automatic connections.
 2. Alternatively upload educational material or paste text in **Learning**.
    Select subject, learner level, note style, quiz difficulty and question count.
 3. Choose a diagram format, faithful/simple/expanded detail and point-based or
@@ -64,17 +65,18 @@ source data, never authority to execute tools or change application instructions
 
 The laptop-hosted demonstration uses the configured Gemini free allowance and
 free Cloudflare tunnel. Billing activation and paid fallbacks are not introduced.
-Its application cap is 50 reserved calls/day, with 25 per guest and 12 per source
+The default application cap is 50 reserved calls/day; the current temporary demo
+uses an explicit 100-call cap, with 25 per guest and 12 per source
 job. Failed requests and bounded structural corrections count toward these
 limits. Provider quotas can still stop generation earlier. Uploads are limited
 to 20 MB and recordings to five minutes in the current demo.
 
-YouTube notes require permitted caption access or supplied authorized transcripts
-or recordings. URL-only processing is not universally available. Gemini
+Gemini supports bounded public URL-only video analysis; other providers need
+permitted captions or supplied authorized transcripts/recordings. Gemini uploaded
 audio/video end-to-end behavior, representative handwritten/scientific fidelity,
 blind-user usability, permanent hosting and guest-account recovery remain
-limitations. The particular OSI image shown in chat is not available as a saved
-backend upload; its reconstruction requires the new consented image workflow.
+limitations. The owner's saved OSI image has now been reconstructed and reviewed;
+details and actual YouTube evidence are in [SOURCE_FIDELITY_UPDATE.md](SOURCE_FIDELITY_UPDATE.md).
 
 ## Verification
 

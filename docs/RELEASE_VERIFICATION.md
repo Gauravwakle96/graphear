@@ -1,6 +1,50 @@
 # Release and ₹0 demo verification
 
-## Current student-workflow release
+## Source fidelity and direct YouTube release
+
+The latest implementation is documented in
+[SOURCE_FIDELITY_UPDATE.md](SOURCE_FIDELITY_UPDATE.md). Backend keys and the
+Gemini 3.1 Flash Lite provider were preserved, with no paid fallback.
+
+Actual Gemini analysis of the owner's saved OSI image produced a connected
+22-node/21-relationship mind map covering all seven layers, devices, units and
+headers, with four detailed note sections and five questions. Earlier incomplete
+attempts were rejected. Two source ambiguities were explicitly flagged during
+manual review. Original image bytes and previous database revisions remain preserved.
+
+The actual public [OSI video](https://www.youtube.com/watch?v=vv4y_uOneC0)
+processed through the deployed Gemini backend into **10 timestamped source
+sections, 11 detailed note sections, a seven-node/seven-relationship overview,
+a 52-node/41-relationship complete concept diagram and five practice questions**.
+Public metadata confirmed **999 seconds (16:39)**. All seven layer names and all
+six adjacent layer-order links were checked, including their relationship types.
+The real API saved the submitted quiz and returned a 107,421-byte notes PDF.
+The verification session was deleted afterward. Earlier short outputs, an invented
+27:18 duration and incomplete/mislabeled layer links were rejected during evaluation.
+Model observations are not official captions or a universal accuracy measurement.
+
+Local lint, typecheck, coverage tests and production build passed with **125 tests
+across 12 suites**. All **28 Playwright regressions** passed. Production smoke and
+parseable PDF/DOCX/flashcard/ZIP export checks passed; export fixtures are explicitly
+synthetic and make no AI calls. `npm audit` reported zero vulnerabilities.
+
+Actual owner-image and final YouTube outputs were also checked through the public
+UI: notes, editable diagrams, focus/fit controls, quiz persistence, parseable PDF
+and layouts at 390, 820 and 1440 pixels. These checks reuse the real saved model
+outputs, create private verification copies and remove those copies afterward.
+No additional AI generation is needed for browser verification.
+
+The configuration default remains 50 global calls/day. The temporary demo uses
+an explicit 100-call application cap, retaining the provider's free quotas,
+25 calls per guest/day and 12 calls per job. No paid fallback or billing activation
+was added. Failed requests and bounded corrections count against the allowance.
+
+Free API quotas, temporary laptop/tunnel uptime, uploaded Gemini audio/video,
+general scientific/handwritten fidelity and real-user usability remain limits.
+The sections below preserve historical results rather than establishing those
+remaining capabilities.
+
+## Previous student-workflow release
 
 The 2026-11-01 student upgrade retains React/TypeScript, Express, SQLite and the
 legacy accessible diagram workspace. It adds learner preferences, secure

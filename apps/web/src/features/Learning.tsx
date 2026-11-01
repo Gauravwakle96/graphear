@@ -100,7 +100,11 @@ function UploadForm({
   const canProcess = Boolean(
     config?.configured &&
     config.available !== false &&
-    (kind !== 'youtube' || config.captionsConfigured || text.trim() || file),
+    (kind !== 'youtube' ||
+      config.captionsConfigured ||
+      config.youtubeDirectConfigured ||
+      text.trim() ||
+      file),
   );
   function choose(f: File | undefined) {
     setError('');
@@ -310,8 +314,9 @@ function UploadForm({
               />
             </label>
             <p className="notice">
-              Notes need the video's actual content. When caption access is unavailable, paste its
-              transcript or attach authorized TXT/VTT/SRT or audio/video material.
+              {config?.youtubeDirectConfigured
+                ? `Paste a public YouTube link to generate topic-wise notes, diagrams and practice directly from the video. Up to ${config.limits.youtubeMinutes ?? 30} minutes from the start are analyzed. Private, unlisted or restricted videos are unsupported.`
+                : 'Notes need the video’s actual content. When caption access is unavailable, paste its transcript or attach authorized TXT/VTT/SRT or audio/video material.'}
             </p>
             <label>
               Transcript (optional)
@@ -326,13 +331,16 @@ function UploadForm({
             <Button type="button" onClick={() => input.current?.click()}>
               Attach transcript or recording
             </Button>
-            {!config?.captionsConfigured && !text.trim() && !file && (
-              <p className="notice" role="status">
-                Add a transcript to generate notes. Open the video on YouTube, choose “Show
-                transcript” when available, and copy its text with timestamps. You can save the link
-                as a draft while preparing the transcript.
-              </p>
-            )}
+            {!config?.captionsConfigured &&
+              !config?.youtubeDirectConfigured &&
+              !text.trim() &&
+              !file && (
+                <p className="notice" role="status">
+                  Add a transcript to generate notes. Open the video on YouTube, choose “Show
+                  transcript” when available, and copy its text with timestamps. You can save the
+                  link as a draft while preparing the transcript.
+                </p>
+              )}
           </>
         )}
         {kind === 'text' && (
@@ -665,7 +673,7 @@ export function Learning({
     setDirty(false);
     setError('');
     setNotice('');
-    setTab('notes');
+    setTab(s.input.mime?.startsWith('image/') ? 'diagrams' : 'notes');
     setSource('');
     setDiagram('');
     void refresh().catch(() => undefined);

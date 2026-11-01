@@ -21,6 +21,7 @@ export type AIConfig = {
   jobCalls: number;
   uploadBytes: number;
   mediaSeconds: number;
+  youtubeSeconds: number;
   retentionHours: number;
   uploadDir: string;
   ffmpeg: string;
@@ -80,6 +81,7 @@ export function aiConfig(): AIConfig {
     jobCalls: limit('AI_JOB_CALL_LIMIT', 12, 1, 30),
     uploadBytes: limit('LEARNING_UPLOAD_MB', 100, 1, 200) * 1024 * 1024,
     mediaSeconds: limit('LEARNING_MEDIA_MINUTES', 30, 1, 120) * 60,
+    youtubeSeconds: limit('LEARNING_YOUTUBE_MINUTES', 30, 1, 60) * 60,
     retentionHours: limit('LEARNING_RETENTION_HOURS', 168, 1, 8760),
     uploadDir: resolve(process.env.LEARNING_UPLOAD_DIR ?? 'data/learning'),
     ffmpeg: process.env.FFMPEG_PATH ?? 'ffmpeg',

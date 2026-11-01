@@ -82,6 +82,7 @@ export type LearningSummary = Pick<
   'id' | 'title' | 'status' | 'progress' | 'updatedAt' | 'revision'
 >;
 export type LearningConfig = {
+  youtubeDirectConfigured?: boolean;
   provider: string;
   providerLabel?: string;
   visionModel?: string | null;
@@ -97,6 +98,7 @@ export type LearningConfig = {
     uploadMB: number;
     documentMB: number;
     mediaMinutes: number;
+    youtubeMinutes?: number;
     pdfPages: number;
     retentionHours: number;
   };

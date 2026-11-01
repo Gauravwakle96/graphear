@@ -63,10 +63,12 @@ export function learningRouter(
       transcriptionConfigured: Boolean(config.transcriptionModel),
       ...service.availability(),
       captionsConfigured: Boolean(config.youtubeOAuth),
+      youtubeDirectConfigured: configured(config) && Boolean(service.provider.youtubeSupported),
       limits: {
         uploadMB: config.uploadBytes / 1024 / 1024,
         documentMB: 20,
         mediaMinutes: config.mediaSeconds / 60,
+        youtubeMinutes: config.youtubeSeconds / 60,
         pdfPages: 50,
         retentionHours: config.retentionHours,
       },
@@ -159,7 +161,13 @@ export function learningRouter(
         input.name = metadata.title;
         input.embed = metadata.embed;
         input.duration = metadata.duration;
-        if (!input.path && !text && !config.youtubeOAuth && processNow)
+        if (
+          !input.path &&
+          !text &&
+          !config.youtubeOAuth &&
+          !service.provider.youtubeSupported &&
+          processNow
+        )
           throw new Error(
             'Supply an authorized transcript/media file or configure permitted YouTube caption access',
           );

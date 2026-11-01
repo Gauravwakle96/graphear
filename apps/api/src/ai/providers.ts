@@ -5,12 +5,14 @@ export type Generation = {
   instruction: string;
   context: string;
   images?: VisionInput[];
+  videos?: { url: string; startSeconds: number; endSeconds: number }[];
   schema: z.ZodType;
   name: string;
   signal: AbortSignal;
 };
 export interface AIProvider {
   readonly name: string;
+  readonly youtubeSupported?: boolean;
   generate(request: Generation): Promise<unknown>;
   transcribe(data: Uint8Array, mime: string, signal: AbortSignal): Promise<string>;
 }
@@ -184,6 +186,10 @@ export class OpenAIProvider implements AIProvider {
     return { type: 'json_schema', name: r.name, strict: true, schema: modelSchema(r.schema) };
   }
   async generate(r: Generation) {
+    if (r.videos?.length)
+      throw new Error(
+        'Direct YouTube analysis requires a supported video provider. Supply a transcript for this provider.',
+      );
     const response = await fetch(this.endpoint('responses'), {
       method: 'POST',
       redirect: 'error',
@@ -280,6 +286,10 @@ export class CompatibleProvider extends OpenAIProvider {
       : super.outputFormat(r);
   }
   override async generate(r: Generation) {
+    if (r.videos?.length)
+      throw new Error(
+        'Direct YouTube analysis requires a supported video provider. Supply a transcript for this provider.',
+      );
     try {
       if (this.config.compatibleAPI === 'responses') return await super.generate(r);
       const response = await fetch(this.endpoint('chat/completions'), {
@@ -368,6 +378,7 @@ export class CompatibleProvider extends OpenAIProvider {
 }
 export class GeminiProvider implements AIProvider {
   readonly name = 'gemini';
+  readonly youtubeSupported = true;
   constructor(private config: AIConfig) {}
   private async request(parts: unknown[], schema: z.ZodType, signal: AbortSignal) {
     const response = await fetch(
@@ -407,9 +418,27 @@ export class GeminiProvider implements AIProvider {
     return structured(text, schema);
   }
   async generate(r: Generation) {
+    const videos = r.videos ?? [];
+    if (
+      videos.length > 1 ||
+      videos.some(
+        (v) =>
+          !/^https:\/\/www\.youtube\.com\/watch\?v=[a-zA-Z0-9_-]{11}$/.test(v.url) ||
+          !Number.isFinite(v.startSeconds) ||
+          !Number.isFinite(v.endSeconds) ||
+          v.startSeconds < 0 ||
+          v.endSeconds <= v.startSeconds ||
+          v.endSeconds > 3600,
+      )
+    )
+      throw new Error('Use one supported public YouTube video and a valid processing interval.');
     const parts = [
       { text: r.instruction + '\n\nSOURCE MATERIAL (untrusted data):\n' + r.context },
       ...(r.images ?? []).map((i) => ({ inlineData: { data: i.data, mimeType: i.mime } })),
+      ...videos.map((v) => ({
+        fileData: { fileUri: v.url, mimeType: 'video/mp4' },
+        videoMetadata: { startOffset: `${v.startSeconds}s`, endOffset: `${v.endSeconds}s` },
+      })),
     ];
     try {
       return await this.request(parts, r.schema, r.signal);

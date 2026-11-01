@@ -1,5 +1,34 @@
 import { parseGraph, type Graph, type GraphNode, type GraphEdge } from '@graphear/core';
 export type Imported = { graph: Graph; image?: string; notes: string[] };
+
+export async function validateRasterFile(file: File) {
+  const ext = file.name.toLowerCase().split('.').at(-1);
+  if (!['png', 'jpg', 'jpeg', 'webp'].includes(ext ?? ''))
+    throw new Error('Choose a PNG, JPEG or WEBP image.');
+  if (file.size > 20 * 1024 * 1024) throw new Error('Images are limited to 20 MB.');
+  const bytes = new Uint8Array(await file.slice(0, 12).arrayBuffer());
+  const png = [137, 80, 78, 71, 13, 10, 26, 10].every((b, i) => bytes[i] === b);
+  const jpeg = bytes[0] === 255 && bytes[1] === 216 && bytes[2] === 255;
+  const webp =
+    String.fromCharCode(...bytes.slice(0, 4)) === 'RIFF' &&
+    String.fromCharCode(...bytes.slice(8, 12)) === 'WEBP';
+  if (!(
+    (ext === 'png' && png) ||
+    (['jpg', 'jpeg'].includes(ext ?? '') && jpeg) ||
+    (ext === 'webp' && webp)
+  ))
+    throw new Error('The file contents do not match its image format.');
+  const url = URL.createObjectURL(file);
+  try {
+    const image = new Image();
+    image.src = url;
+    await image.decode();
+    if (image.naturalWidth * image.naturalHeight > 16_000_000)
+      throw new Error('Resize this image to fewer than 16 million pixels.');
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
 type Point = { x: number; y: number };
 const number = (value: string | null, fallback = 0) => {
   const n = Number.parseFloat(value ?? '');
@@ -334,41 +363,21 @@ async function ocr(
         },
       };
     });
-    const edges: GraphEdge[] = [];
-    for (const node of nodes) {
-      if (node.type === 'end') continue;
-      const candidates = nodes
-        .filter(
-          (n) =>
-            n.id !== node.id &&
-            n.y > node.y + node.height * 0.7 &&
-            Math.abs(n.x + n.width / 2 - node.x - node.width / 2) < 130,
-        )
-        .toSorted((a, b) => a.y - b.y);
-      if (candidates[0])
-        edges.push({
-          id: `suggested-${edges.length + 1}`,
-          source: node.id,
-          target: candidates[0].id,
-          label: '',
-          review: 'inferred',
-        });
-    }
     return {
       graph: parseGraph({
         schemaVersion: 1,
         id: crypto.randomUUID(),
         title: name.replace(/\.[^.]+$/, ''),
-        description: 'Image recognition draft. Review labels, types and all connections.',
+        description: 'Local text extraction only. No diagram structure or arrows were recognized.',
         width,
         height,
         nodes,
-        edges,
+        edges: [],
         source: { name, kind },
       }),
       image: canvas.toDataURL('image/png'),
       notes: [
-        'OCR found text regions. Step boundaries and connections are geometric suggestions, not verified arrow recognition. Add missing branches in Edit, then confirm the structure.',
+        'Local OCR extracted text only; no arrows or relationships were recognized. Labels may be incorrect. Reconstruct with AI or manually define the structure in Edit.',
       ],
     };
   } finally {

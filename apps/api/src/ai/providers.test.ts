@@ -12,6 +12,48 @@ import { aiConfig, configured, providerBaseURL } from './config';
 const schema = z.object({ answer: z.string() }).strict();
 afterEach(() => vi.unstubAllGlobals());
 describe('documented HTTP provider contracts (test responses only)', () => {
+  it('passes public YouTube URLs through Gemini video parts and rejects arbitrary URLs', async () => {
+    let parts: unknown[] = [];
+    const fetcher = vi.fn(async (_url, init) => {
+      parts = JSON.parse(init.body).contents[0].parts;
+      return Response.json({
+        candidates: [
+          { finishReason: 'STOP', content: { parts: [{ text: '{"answer":"test-only"}' }] } },
+        ],
+      });
+    });
+    vi.stubGlobal('fetch', fetcher);
+    const provider = new GeminiProvider({
+      ...aiConfig(),
+      provider: 'gemini',
+      geminiKey: 'test-only',
+    });
+    const request = {
+      instruction: 'Read actual video',
+      context: 'test-only',
+      schema,
+      name: 'youtube',
+      signal: AbortSignal.timeout(1000),
+      videos: [
+        { url: 'https://www.youtube.com/watch?v=abcdefghijk', startSeconds: 0, endSeconds: 300 },
+      ],
+    };
+    await provider.generate(request);
+    expect(parts[1]).toMatchObject({
+      fileData: { fileUri: request.videos[0].url, mimeType: 'video/mp4' },
+      videoMetadata: { startOffset: '0s', endOffset: '300s' },
+    });
+    await expect(
+      provider.generate({
+        ...request,
+        videos: [{ ...request.videos[0], url: 'http://127.0.0.1/private' }],
+      }),
+    ).rejects.toThrow('supported public YouTube');
+    expect(fetcher).toHaveBeenCalledTimes(1);
+    await expect(new OpenAIProvider(aiConfig()).generate(request)).rejects.toThrow(
+      'supported video provider',
+    );
+  });
   it('retains the Gemini generation request for a budgeted structural correction', async () => {
     vi.stubGlobal(
       'fetch',

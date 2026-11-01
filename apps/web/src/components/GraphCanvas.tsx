@@ -8,6 +8,7 @@ type Props = {
   onSelect: (id: string) => void;
   changedEdges?: Set<string>;
   hidden?: boolean;
+  image?: string;
 };
 function connection(a: GraphNode, b: GraphNode) {
   const ac = { x: a.x + a.width / 2, y: a.y + a.height / 2 },
@@ -33,9 +34,33 @@ export function GraphCanvas({
   onSelect,
   changedEdges = new Set(),
   hidden = false,
+  image,
 }: Props) {
   const marker = useId().replace(/:/g, '');
   const nodeMap = new Map(graph.nodes.map((n) => [n.id, n]));
+  const textOnly = graph.description.startsWith('Local text extraction only.');
+  if (textOnly)
+    return (
+      <div className="canvas-scroll ocr-source-view">
+        <h2>Original image and extracted text</h2>
+        <p>
+          No diagram has been reconstructed yet. Use AI for the structure, or correct these labels
+          and add connections manually.
+        </p>
+        {image && <img src={image} alt="Original imported image; local OCR labels follow" />}
+        <div className="ocr-label-list" aria-label="Locally extracted labels">
+          {graph.nodes.map((node) => (
+            <button
+              key={node.id}
+              aria-pressed={node.id === selectedId}
+              onClick={() => onSelect(node.id)}
+            >
+              {node.label}
+            </button>
+          ))}
+        </div>
+      </div>
+    );
   return (
     <div className={`canvas-scroll ${hidden ? 'canvas-hidden' : ''}`}>
       <div
