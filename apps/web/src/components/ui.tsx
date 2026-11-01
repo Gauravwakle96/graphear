@@ -66,8 +66,15 @@ export function Dialog({
       ref={ref}
       className={`dialog ${className}`}
       aria-labelledby={id}
-      onCancel={onClose}
-      onClose={onClose}
+      onCancel={(event) => {
+        event.preventDefault();
+        onClose();
+      }}
+      onClose={() => {
+        // Native close events are queued. Ignore an old event if the dialog
+        // has already reopened for another navigation decision.
+        if (!ref.current?.open) onClose();
+      }}
     >
       <div className="dialog-heading">
         <h2 id={id}>{title}</h2>

@@ -62,6 +62,9 @@ describe('documented HTTP provider contracts (test responses only)', () => {
     ).toEqual({ answer: 'ok' });
     expect(endpoint).toContain(':generateContent');
     expect(request.generationConfig).toMatchObject({ responseMimeType: 'application/json' });
+    expect(request.generationConfig).toMatchObject({
+      responseSchema: { type: 'OBJECT', required: ['answer'] },
+    });
     expect(JSON.stringify(request)).toContain('inlineData');
     expect(JSON.stringify(request)).not.toContain('test-only-key');
   });

@@ -69,6 +69,30 @@ function modelSchema(schema: z.ZodType) {
   delete json.$schema;
   return json;
 }
+function geminiSchema(schema: z.ZodType) {
+  // Gemini's native schema format accepts a smaller structural vocabulary.
+  // Every returned value still passes the complete original Zod constraints.
+  const convert = (value: Record<string, unknown>): Record<string, unknown> => {
+    if (Array.isArray(value.anyOf)) {
+      const variants = value.anyOf as Record<string, unknown>[];
+      const concrete = variants.filter((v) => v.type !== 'null');
+      if (concrete.length !== 1) throw new Error('Unsupported union in Gemini output schema');
+      return { ...convert(concrete[0]), nullable: variants.some((v) => v.type === 'null') };
+    }
+    const output: Record<string, unknown> = { type: String(value.type).toUpperCase() };
+    if (value.enum) output.enum = value.enum;
+    if (value.required) output.required = value.required;
+    if (value.properties)
+      output.properties = Object.fromEntries(
+        Object.entries(value.properties as Record<string, Record<string, unknown>>).map(
+          ([key, child]) => [key, convert(child)],
+        ),
+      );
+    if (value.items) output.items = convert(value.items as Record<string, unknown>);
+    return output;
+  };
+  return convert(modelSchema(schema));
+}
 export class OpenAIProvider implements AIProvider {
   readonly name = 'openai';
   constructor(private config: AIConfig) {}
@@ -150,7 +174,7 @@ export class GeminiProvider implements AIProvider {
           contents: [{ role: 'user', parts }],
           generationConfig: {
             responseMimeType: 'application/json',
-            responseJsonSchema: modelSchema(schema),
+            responseSchema: geminiSchema(schema),
             maxOutputTokens: 12000,
             ...(this.config.geminiThinkingBudget !== undefined
               ? { thinkingConfig: { thinkingBudget: this.config.geminiThinkingBudget } }
