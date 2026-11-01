@@ -1,5 +1,5 @@
 import { PDFDocument, rgb } from 'pdf-lib';
-import * as fontkit from '@pdf-lib/fontkit';
+import fontkit from '@pdf-lib/fontkit';
 import {
   Document,
   Packer,

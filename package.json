@@ -25,7 +25,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "examples": "tsx scripts/examples.ts",
-    "test:smoke": "node scripts/smoke.mjs"
+    "test:smoke": "node scripts/smoke.mjs",
+    "test:exports": "tsx scripts/export-smoke.ts"
   },
   "dependencies": {
     "zod": "4.6.7"
