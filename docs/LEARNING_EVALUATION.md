@@ -55,5 +55,8 @@ circuit ports, class attributes, biological structures, numbers, formulas, page
 references, timestamps, uncertainty and marked additional explanations. Record
 reviewer corrections; schema validity alone cannot certify meaning.
 
-Live evaluation has not run yet because no provider credentials or representative
-real source set were configured during this implementation.
+The follow-up live run verified a synthetic raster flowchart and a separate
+structured network-text request. Remaining cases were blocked by overload,
+timeouts and Gemini's free daily quota. Synthetic handwriting-style text is not
+real handwriting. See [the release report](RELEASE_VERIFICATION.md) for measured
+results and outstanding representative evaluation.

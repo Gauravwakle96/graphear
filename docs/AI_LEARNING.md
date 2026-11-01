@@ -116,10 +116,12 @@ and have no account recovery. No learning-session public sharing endpoint exists
 
 ## Material limitations
 
-Live API calls and subject-level accuracy have not been verified because no key or
-representative real input set was available. The adapters' documented HTTP contracts
-and failure handling are tested with explicitly synthetic responses. Diagrams are
-drafts; source citations alone cannot prove correctness.
+Live Gemini generation and one complete raster flowchart workflow were verified
+with synthetic sources. Other live cases hit provider overload, timeouts and the
+free daily quota. Representative handwriting and subject-level accuracy remain
+unverified. See [the release report](RELEASE_VERIFICATION.md). Automated HTTP
+contract tests use explicitly synthetic responses. Diagrams are drafts; source
+citations alone cannot prove correctness.
 
 Office vector drawings, slide animations and physical DOCX page layout are not
 reconstructed. Videos use representative/scene-change candidates, which can miss
@@ -131,7 +133,8 @@ transcript or authorized recording. No restricted downloader is included.
 Production internet exposure still needs deployment review, appropriate provider
 privacy terms, monitoring, user account/recovery decisions and isolated untrusted
 document processing/antivirus where required. Current bounded parsing is not an
-operating-system sandbox. No public deployment, real blind-user validation,
-learning-gain study or hackathon outcome is claimed.
+operating-system sandbox. A temporary ₹0 HTTPS demo is verified; permanent
+hosting, real blind-user validation, learning gains and hackathon outcomes are
+not established.
 
 See [live evaluation](LEARNING_EVALUATION.md) and [implementation report](AI_IMPLEMENTATION_REPORT.md).

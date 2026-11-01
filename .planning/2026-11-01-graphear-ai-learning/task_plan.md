@@ -4,10 +4,10 @@
 Extend the existing app with real configurable AI, private multimodal ingestion, source-linked learning workspaces and exports; verify actual behavior and report live-key limitations.
 
 ## Next Step
-Finish live AI verification and deployment packaging. Deploy to an authorized host with persistent storage and verify the hosted application.
+The ₹0 temporary HTTPS demo is deployed and verified. Repeat the pending live tutor/media/subject cases after the Gemini free quota resets; keep production uptime and accuracy limitations explicit.
 
 ## Current Phase
-Phase 9
+Phase 10: verified temporary free demo; remaining live evaluations limited by provider quota
 
 ## Phases
 
@@ -54,16 +54,16 @@ Phase 9
 - **Status:** complete
 
 ### Phase 9: Live verification and release operations
-- [ ] Inspect available AI credentials and hosting access without exposing secrets
-- [ ] Finish secure deployment configuration, container verification and meaningful live tests
-- [ ] Document actual remaining blockers and results
-- **Status:** in_progress
+- [x] Inspect available AI credentials and hosting access without exposing secrets
+- [x] Finish secure deployment configuration, container verification and meaningful bounded live tests
+- [x] Document remaining quota, accuracy and permanent-hosting limits in RELEASE_VERIFICATION.md
+- **Status:** complete
 
 ### Phase 10: Public deployment
-- [ ] Deploy a verified full-stack release with persistent storage and backend credentials
-- [ ] Verify HTTPS, private sessions and actual hosted learning workflows
-- [ ] Deliver the working URL and deployment report
-- **Status:** pending
+- [x] Deploy the full-stack release on the existing laptop with persistent storage and backend credentials; use a free temporary HTTPS tunnel under the user's ₹0 requirement
+- [x] Verify actual HTTPS, private sessions/files and hosted draft workflows; hosted AI calls not run because free quota is exhausted
+- [x] Record the working URL and deployment report; permanent uptime remains outside this temporary demo
+- **Status:** complete
 
 ## Decisions Made
 | Decision | Rationale |

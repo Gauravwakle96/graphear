@@ -6,11 +6,12 @@ legacy local OCR, graph exploration, repair, sharing and exports were preserved.
 The inspected design and architecture are recorded in
 [the implementation plan](AI_IMPLEMENTATION_PLAN.md).
 
-**Live AI generation has not been verified.** Actual OpenAI and Gemini API
-adapters are implemented, but no application provider credentials or representative
-real learning-material set were configured. Production contains no mock provider
-or hardcoded generated notes. Automated provider and completed-session tests use
-explicitly synthetic responses, and must not be presented as live AI results.
+**Live Gemini generation and a free HTTPS demo have now been verified on bounded
+synthetic sources.** The initial implementation checks below are supplemented by
+[the release report](RELEASE_VERIFICATION.md), including actual live results,
+free-quota failures and the temporary hosting limits. Production contains no mock
+provider or hardcoded generated notes. Automated provider/completed-session tests
+use explicitly synthetic responses and must not be presented as live AI results.
 
 ## Implemented features
 

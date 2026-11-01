@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import { randomBytes, createHash } from 'node:crypto';
-import { mkdtemp } from 'node:fs/promises';
+import { mkdir, mkdtemp } from 'node:fs/promises';
 import { join } from 'node:path';
 import { PDFDocument } from 'pdf-lib';
 import { unzipSync } from 'fflate';
@@ -11,6 +11,7 @@ import { testAnalysis, testSources } from '../packages/core/src/study.test-suppo
 
 // Explicit test fixtures are seeded only into this isolated verification database.
 // Requests run through the actual Node production bundle, with no AI credentials.
+await mkdir('data', { recursive: true });
 const directory = await mkdtemp('data/export-smoke-');
 const path = join(directory, 'test.sqlite');
 const token = randomBytes(32).toString('hex');
