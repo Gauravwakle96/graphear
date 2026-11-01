@@ -8,6 +8,7 @@ services:
       APP_PUBLIC_URL: '${APP_PUBLIC_URL:-}'
       PROXY_TRUST_HOPS: '${PROXY_TRUST_HOPS:-0}'
       AI_PROVIDER: '${AI_PROVIDER:-openai}'
+      AI_FREE_TIER: '${AI_FREE_TIER:-0}'
       OPENAI_API_KEY: '${OPENAI_API_KEY:-}'
       OPENAI_MODEL: '${OPENAI_MODEL:-gpt-6-astra}'
       OPENAI_TRANSCRIPTION_MODEL: '${OPENAI_TRANSCRIPTION_MODEL:-gpt-transcribe}'

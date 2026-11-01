@@ -1,10 +1,52 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { z } from 'zod';
-import { OpenAIProvider, GeminiProvider } from './providers';
+import { AIQuotaError, OpenAIProvider, GeminiProvider } from './providers';
 import { aiConfig } from './config';
 const schema = z.object({ answer: z.string() }).strict();
 afterEach(() => vi.unstubAllGlobals());
 describe('documented HTTP provider contracts (test responses only)', () => {
+  it('extracts a safe free-quota reset time without exposing provider details', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () =>
+        Response.json(
+          {
+            error: {
+              message: 'private account details',
+              details: [
+                { retryDelay: '3600s' },
+                {
+                  violations: [
+                    {
+                      quotaId: 'GenerateRequestsPerDayPerProjectPerModel-FreeTier',
+                      quotaSubject: 'private',
+                    },
+                  ],
+                },
+              ],
+            },
+          },
+          { status: 429 },
+        ),
+      ),
+    );
+    const before = Date.now();
+    const error = await new GeminiProvider({ ...aiConfig(), provider: 'gemini' })
+      .generate({
+        instruction: '',
+        context: '',
+        schema,
+        name: 'test',
+        signal: AbortSignal.timeout(1000),
+      })
+      .catch((e) => e);
+    expect(error).toBeInstanceOf(AIQuotaError);
+    if (!(error instanceof AIQuotaError)) throw new Error('Expected an AI quota error');
+    expect(error).toMatchObject({ dailyQuota: true, freeTier: true });
+    expect(error.retryAt).toBeGreaterThanOrEqual(before + 3600_000);
+    expect(error.message).toBe('The free daily AI limit has been reached.');
+    expect(error.message).not.toContain('private');
+  });
   it('sends OpenAI vision and strict output schemas using server-only authentication', async () => {
     let request: Record<string, unknown> = {};
     let headers: HeadersInit | undefined;

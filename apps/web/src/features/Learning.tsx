@@ -143,7 +143,7 @@ function UploadForm({
       <form
         onSubmit={(e) => {
           e.preventDefault();
-          void submit(Boolean(config?.configured));
+          void submit(Boolean(config?.configured && config.available !== false));
         }}
       >
         {kind !== 'text' && (
@@ -291,11 +291,11 @@ function UploadForm({
           >
             {busy
               ? 'Uploading…'
-              : config?.configured
+              : config?.configured && config.available !== false
                 ? 'Create learning session'
                 : 'Save source draft'}
           </Button>
-          {config?.configured && (
+          {config?.configured && config.available !== false && (
             <Button
               type="button"
               disabled={busy || !consent || (kind === 'file' && !file)}
@@ -353,6 +353,20 @@ export function Learning({ onDirtyChange }: { onDirtyChange: (dirty: boolean) =>
     };
   }, []);
   useEffect(() => {
+    if (config?.available !== false || !config.retryAt) return;
+    const reset = Date.parse(config.retryAt);
+    if (!Number.isFinite(reset)) return;
+    const timer = setTimeout(
+      () => {
+        void learningConfig()
+          .then(setConfig)
+          .catch(() => undefined);
+      },
+      Math.min(2_147_483_647, Math.max(1000, reset - Date.now() + 1000)),
+    );
+    return () => clearTimeout(timer);
+  }, [config?.available, config?.retryAt]);
+  useEffect(() => {
     if (!id || !status || !activeStatuses.includes(status)) return;
     let alive = true;
     let timer: ReturnType<typeof setTimeout>;
@@ -362,7 +376,12 @@ export function Learning({ onDirtyChange }: { onDirtyChange: (dirty: boolean) =>
         if (alive) {
           setSession(result);
           if (activeStatuses.includes(result.status)) timer = setTimeout(() => void poll(), 2500);
-          else void refresh().catch(() => undefined);
+          else {
+            void refresh().catch(() => undefined);
+            void learningConfig()
+              .then(setConfig)
+              .catch(() => undefined);
+          }
         }
       } catch (e) {
         if (alive) {
@@ -389,7 +408,7 @@ export function Learning({ onDirtyChange }: { onDirtyChange: (dirty: boolean) =>
   }, [dirty]);
   const ready = session?.status === 'completed' && Boolean(session.analysis),
     processing = status && activeStatuses.includes(status),
-    enabled = Boolean(config?.configured) && !dirty;
+    enabled = Boolean(config?.configured && config.available !== false) && !dirty;
   function switchSafe(action: () => void) {
     if (dirty) setPending(() => action);
     else action();
@@ -446,6 +465,9 @@ export function Learning({ onDirtyChange }: { onDirtyChange: (dirty: boolean) =>
       await refresh();
     } catch (e) {
       setError(errorMessage(e));
+      void learningConfig()
+        .then(setConfig)
+        .catch(() => undefined);
       throw e;
     } finally {
       setBusy(false);
@@ -553,6 +575,29 @@ export function Learning({ onDirtyChange }: { onDirtyChange: (dirty: boolean) =>
             You can save source drafts. Ask your workspace administrator to configure{' '}
             {config.provider} access before processing material.
           </p>
+        </div>
+      )}
+      {config?.configured && config.available === false && (
+        <div className="notice" role="status">
+          <strong>
+            {config.freeTier ? 'Free AI quota reached' : 'AI is temporarily unavailable'}
+          </strong>
+          <p>
+            {config.retryAt
+              ? `Available again around ${new Date(config.retryAt).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}. `
+              : 'Try again later. '}
+            Your saved material is safe. You can keep source drafts and use the local diagram
+            workspace.
+          </p>
+          <Button
+            onClick={() => {
+              void learningConfig()
+                .then(setConfig)
+                .catch((e) => setError(errorMessage(e)));
+            }}
+          >
+            Check availability
+          </Button>
         </div>
       )}
       {!session ? (
@@ -667,12 +712,14 @@ export function Learning({ onDirtyChange }: { onDirtyChange: (dirty: boolean) =>
                 </a>
               )}
               <p className="muted">
-                Retrying can make additional billable AI calls. Previously extracted sections are
-                reused when available.
+                {config?.freeTier
+                  ? 'Processing uses the free AI allowance. Retry when quota is available. '
+                  : 'Retrying can make additional billable AI calls. '}
+                Previously extracted sections are reused when available.
               </p>
               <Button
                 variant="primary"
-                disabled={busy || !config?.configured || dirty}
+                disabled={busy || !enabled}
                 onClick={() => void action('process').catch(() => undefined)}
               >
                 {status === 'draft' ? 'Process material' : 'Retry processing'}

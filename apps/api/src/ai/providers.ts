@@ -14,6 +14,56 @@ export interface AIProvider {
   generate(request: Generation): Promise<unknown>;
   transcribe(data: Uint8Array, mime: string, signal: AbortSignal): Promise<string>;
 }
+export class AIQuotaError extends Error {
+  constructor(
+    readonly retryAt: number,
+    readonly dailyQuota = false,
+    readonly freeTier = false,
+  ) {
+    super(
+      freeTier && dailyQuota
+        ? 'The free daily AI limit has been reached.'
+        : 'The AI provider is rate limited or its quota is exhausted. Try later.',
+    );
+  }
+}
+async function quotaError(response: Response) {
+  let data: unknown;
+  try {
+    const text = await response.text();
+    if (text.length <= 2_000_000) data = JSON.parse(text);
+  } catch {
+    /* Provider error details are optional; never expose the raw body. */
+  }
+  const parsed = z
+    .object({
+      error: z.object({
+        details: z
+          .array(
+            z.object({
+              retryDelay: z.string().optional(),
+              violations: z.array(z.object({ quotaId: z.string() })).optional(),
+            }),
+          )
+          .optional(),
+      }),
+    })
+    .safeParse(data);
+  const details = parsed.success ? (parsed.data.error.details ?? []) : [];
+  const ids = details.flatMap((d) => d.violations?.map((v) => v.quotaId) ?? []);
+  const delay = details.find((d) => d.retryDelay)?.retryDelay?.match(/^([0-9.]+)s$/)?.[1];
+  const header = response.headers.get('Retry-After');
+  const hint = delay ?? header ?? '60';
+  const seconds = Number.isFinite(Number(hint))
+    ? Number(hint)
+    : (Date.parse(hint) - Date.now()) / 1000;
+  const bounded = Number.isFinite(seconds) && seconds > 0 ? Math.min(seconds, 7 * 86400) : 60;
+  return new AIQuotaError(
+    Date.now() + bounded * 1000,
+    ids.some((id) => /PerDay/.test(id)),
+    ids.some((id) => /FreeTier/.test(id)),
+  );
+}
 async function jsonResponse(response: Response) {
   if (!response.ok) {
     const code = response.status;
@@ -21,8 +71,7 @@ async function jsonResponse(response: Response) {
       throw new Error(
         'The configured AI credentials or model access were rejected. Check backend configuration.',
       );
-    if (code === 429)
-      throw new Error('The AI provider is rate limited or its quota is exhausted. Try later.');
+    if (code === 429) throw await quotaError(response);
     if ([502, 503, 504].includes(code))
       throw new Error(
         'The AI provider is temporarily unavailable. Retry explicitly later; no generated result was saved.',

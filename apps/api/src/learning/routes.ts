@@ -10,7 +10,7 @@ import { LearningService, safeError } from './service';
 import { persistUpload, inside, removePrivate, supportedMimes } from './files';
 import { youtubeId, youtubeMetadata } from './youtube';
 import { notesPdf, notesDocx, learningPackage } from './exports';
-import type { AIProvider } from '../ai/providers';
+import { AIQuotaError, type AIProvider } from '../ai/providers';
 const idSchema = z.uuid();
 export function learningRouter(
   base: Store,
@@ -47,6 +47,7 @@ export function learningRouter(
       provider: config.provider,
       model: config.model,
       configured: configured(config),
+      ...service.availability(),
       captionsConfigured: Boolean(config.youtubeOAuth),
       limits: {
         uploadMB: config.uploadBytes / 1024 / 1024,
@@ -102,6 +103,11 @@ export function learningRouter(
       if (processNow && !configured(config))
         return res.status(503).json({
           error: 'AI provider is not configured. Save a draft or configure its backend key.',
+        });
+      if (processNow && !service.availability().available)
+        return res.status(429).json({
+          error: service.availability().unavailableReason,
+          retryAt: service.availability().retryAt,
         });
       const type = z.enum(['file', 'text', 'youtube']).parse(req.body.kind);
       const text = z
@@ -164,13 +170,18 @@ export function learningRouter(
   router.post('/:id/process', (req, res) => {
     const s = owned(req, res.locals.owner);
     if (!s) return res.sendStatus(404);
+    if (s.status === 'completed') return res.json(publicLearning(s));
     if (!configured(config))
       return res
         .status(503)
         .json({ error: 'Configure the selected AI provider key on the backend' });
+    if (!service.availability().available)
+      return res.status(429).json({
+        error: service.availability().unavailableReason,
+        retryAt: service.availability().retryAt,
+      });
     if (['queued', 'extracting', 'generating'].includes(s.status))
       return res.status(409).json({ error: 'This session is already processing' });
-    if (s.status === 'completed') return res.json(publicLearning(s));
     store.state(s.owner, s.id, 'queued', 0, 'Waiting for processing');
     res.json(publicLearning(store.get(s.owner, s.id)!));
   });
@@ -363,6 +374,10 @@ export function learningRouter(
         return _next(error);
       if (error instanceof multer.MulterError)
         return res.status(413).json({ error: 'Upload exceeds its file or field limits' });
+      if (error instanceof AIQuotaError)
+        return res
+          .status(429)
+          .json({ error: error.message, retryAt: new Date(error.retryAt).toISOString() });
       if (error instanceof z.ZodError)
         return res.status(400).json({
           error: 'Invalid learning request or generated data. Check the selected inputs.',

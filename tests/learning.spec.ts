@@ -48,6 +48,10 @@ async function prepared(page: Page, initial = session()) {
         provider: 'test fixture',
         model: 'test-only',
         configured: true,
+        available: true,
+        freeTier: false,
+        retryAt: null,
+        unavailableReason: null,
         captionsConfigured: false,
         limits: {
           uploadMB: 100,
@@ -110,8 +114,11 @@ async function prepared(page: Page, initial = session()) {
   });
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/#learning');
-  await page.getByRole('button', { name: /Synthetic learning test fixture completed/ }).click();
-  await expect(page.getByRole('heading', { name: 'Client-server communication' })).toBeVisible();
+  await page.getByRole('button', { name: `${initial.title} ${initial.status}` }).click();
+  if (initial.analysis)
+    await expect(page.getByRole('heading', { name: initial.analysis.title })).toBeVisible();
+  else
+    await expect(page.getByRole('heading', { name: 'Processing needs attention' })).toBeVisible();
 }
 test('real unconfigured server allows private drafts but makes no AI success claim', async ({
   page,
@@ -356,4 +363,56 @@ test('source citations focus their heading and seek uploaded audio after metadat
     .poll(() => page.locator('audio').evaluate((media) => (media as HTMLAudioElement).currentTime))
     .toBeCloseTo(4.5, 2);
   await page.screenshot({ path: '.impeccable/review/learning-media-fixture.png', fullPage: true });
+});
+test('free-quota notice explains reset and prevents repeated processing requests', async ({
+  page,
+}) => {
+  const initial = {
+    ...session(),
+    status: 'failed' as const,
+    analysis: null,
+    error: 'The free daily AI limit has been reached.',
+    message: 'Processing failed',
+  };
+  await prepared(page, initial);
+  let blocked = true;
+  await page.route('**/api/learning/config', (r) =>
+    r.fulfill({
+      json: {
+        provider: 'test fixture',
+        model: 'test-only',
+        configured: true,
+        available: !blocked,
+        freeTier: true,
+        retryAt: blocked ? '2030-01-02T08:00:00Z' : null,
+        unavailableReason: initial.error,
+        captionsConfigured: false,
+        limits: {
+          uploadMB: 20,
+          documentMB: 20,
+          mediaMinutes: 5,
+          pdfPages: 50,
+          retentionHours: 168,
+        },
+        privacy: 'Test fixture',
+      },
+    }),
+  );
+  let requests = 0;
+  await page.route(`**/api/learning/${fixtureId}/process`, (r) => {
+    requests++;
+    return r.fulfill({ status: 429, json: { error: initial.error } });
+  });
+  await page.reload();
+  await page.getByRole('button', { name: `${initial.title} ${initial.status}` }).click();
+  await expect(page.getByText('Free AI quota reached', { exact: true })).toBeVisible();
+  await expect(page.getByText(/Available again around/)).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Retry processing', exact: true })).toBeDisabled();
+  await expect(page.getByText(/billable AI calls/)).toHaveCount(0);
+  expect(requests).toBe(0);
+  blocked = false;
+  await page.getByRole('button', { name: 'Check availability', exact: true }).click();
+  await expect(page.getByText('Free AI quota reached', { exact: true })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Retry processing', exact: true })).toBeEnabled();
+  expect(requests).toBe(0);
 });

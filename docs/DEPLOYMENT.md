@@ -79,6 +79,19 @@ application budget. Free model availability is not guaranteed; the application
 does not silently fall back to paid APIs or fabricate results. Guest ownership,
 source review and provider consent remain required.
 
+Set `AI_FREE_TIER=1` only when the selected provider account has been verified
+to use free allowance. This changes pricing copy, not billing settings. Known
+provider cooldowns are stored in SQLite and enforced before new AI calls. The
+workspace shows an approximate reset, disables generation/tutor actions and
+continues to accept source drafts and private downloads. Check availability
+refreshes configuration without consuming a generation request.
+
+The current quota update runs backend and tunnel as independent hidden processes
+with file-directed logs. Its URL and owned PIDs are in the ignored deployment
+state. The first reload lost the old tunnel; guest cookies from that hostname do
+not transfer automatically. Saved database records and files were retained, and
+the original learning record was compared against its protected backup.
+
 ## Docker on an existing host
 
 Docker Compose also runs the full app and injects only listed runtime secrets

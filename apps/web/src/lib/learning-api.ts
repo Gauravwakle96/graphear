@@ -65,6 +65,10 @@ export type LearningConfig = {
   provider: string;
   model: string;
   configured: boolean;
+  available: boolean;
+  freeTier: boolean;
+  retryAt: string | null;
+  unavailableReason: string | null;
   captionsConfigured: boolean;
   limits: {
     uploadMB: number;

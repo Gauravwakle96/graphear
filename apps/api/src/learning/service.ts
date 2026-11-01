@@ -13,7 +13,7 @@ import {
 } from '@graphear/core';
 import type { AIConfig } from '../ai/config';
 import { configured } from '../ai/config';
-import { makeProvider, type AIProvider, type VisionInput } from '../ai/providers';
+import { AIQuotaError, makeProvider, type AIProvider, type VisionInput } from '../ai/providers';
 import { LearningStore, type LearningSession } from './store';
 import {
   extractDocument,
@@ -56,7 +56,7 @@ export class LearningService {
         this.lastCleanup = Date.now();
         void this.cleanup().catch(() => undefined);
       }
-      if (!this.running && configured(this.config)) {
+      if (!this.running && this.availability().available) {
         const next = this.store.claim();
         if (next) {
           this.activeId = next.id;
@@ -75,6 +75,16 @@ export class LearningService {
     this.controllers.forEach((c) => c.abort());
     await this.running;
     await Promise.allSettled(this.actions.values());
+  }
+  availability() {
+    const state = this.store.cooldown(this.config.provider + ':' + this.config.model);
+    const error = state ? new AIQuotaError(state.retryAt, state.dailyQuota, state.freeTier) : null;
+    return {
+      available: configured(this.config) && !state,
+      freeTier: this.config.freeTier,
+      retryAt: state ? new Date(state.retryAt).toISOString() : null,
+      unavailableReason: error?.message ?? null,
+    };
   }
   cancel(owner: string, id: string) {
     const s = this.store.get(owner, id);
@@ -99,6 +109,8 @@ export class LearningService {
     parent ??= this.controllers.get(s.id)?.signal;
     if (!configured(this.config))
       throw new Error('Configure the selected AI provider key on the backend before processing');
+    const state = this.store.cooldown(this.config.provider + ':' + this.config.model);
+    if (state) throw new AIQuotaError(state.retryAt, state.dailyQuota, state.freeTier);
     this.store.reserve(s.owner, s.id, task, this.config.dailyCalls, this.config.jobCalls);
     const signal = parent
       ? AbortSignal.any([parent, AbortSignal.timeout(this.config.timeoutMs)])
@@ -106,6 +118,8 @@ export class LearningService {
     try {
       return await action(signal);
     } catch (error) {
+      if (error instanceof AIQuotaError)
+        this.store.blockProvider(this.config.provider + ':' + this.config.model, error);
       if (signal.aborted)
         throw new Error(
           parent?.aborted

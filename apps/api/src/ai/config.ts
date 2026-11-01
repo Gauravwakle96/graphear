@@ -6,6 +6,7 @@ export type AIConfig = {
   model: string;
   transcriptionModel: string;
   geminiThinkingBudget?: number;
+  freeTier: boolean;
   timeoutMs: number;
   dailyCalls: number;
   jobCalls: number;
@@ -30,6 +31,7 @@ export function aiConfig(): AIConfig {
     throw new Error('AI_PROVIDER must be openai or gemini');
   return {
     provider: provider as AIConfig['provider'],
+    freeTier: process.env.AI_FREE_TIER === '1',
     openaiKey: process.env.OPENAI_API_KEY ?? '',
     geminiKey: process.env.GEMINI_API_KEY ?? '',
     model:

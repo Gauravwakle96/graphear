@@ -2,11 +2,11 @@
 
 The complete Graphear frontend and Express backend are publicly reachable through
 a free Cloudflare Quick Tunnel on the existing Windows laptop. The launch on
-2026-11-01 uses code release `04817b6`, local persistent SQLite/uploads, backend-only
+2026-11-01 includes the quota-handling update, local persistent SQLite/uploads, backend-only
 Gemini credentials and no paid infrastructure. The deployment configuration and
 restart/backup procedure are in [DEPLOYMENT.md](DEPLOYMENT.md).
 
-Launch URL: https://examining-offer-ontario-system.trycloudflare.com
+Current URL: https://professionals-compiler-explaining-uri.trycloudflare.com
 
 This is a temporary demo URL. It works while the laptop, network and launcher
 remain online and can change after restart. Cloudflare Quick Tunnels are documented
@@ -17,9 +17,9 @@ to the current hostname; export important work before restarting the tunnel.
 
 | Check                     | Observed result                                                                                                                       |
 | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| Unit/API/extraction       | 72 tests passed across 9 suites on Windows                                                                                            |
+| Unit/API/extraction       | 74 tests passed across 9 suites on Windows                                                                                            |
 | Lint/typecheck/build      | Passed on the final runtime code                                                                                                      |
-| Browser regression        | 20 tests passed against the production bundle                                                                                         |
+| Browser regression        | 21 tests passed against the production bundle, including free-quota notice, disabled retries and availability refresh                 |
 | Dialog race               | Reproduced with Chromium; fixed stale native close events; 8 repetitions passed                                                       |
 | Production smoke          | Passed: frontend, CSP, secure cookies, offline navigation, local OCR and private drafts                                               |
 | Production export API     | Parseable private PDF, DOCX, flashcard PDF and ZIP through the built Node server; explicit test fixture, no AI calls                  |
@@ -83,7 +83,15 @@ biology, UML and real handwritten fidelity still needs subject-level review.
 Gemini reported a free limit of **20 requests/day** and a reset about 20 hours
 after the last test. Troubleshooting and live checks consumed that quota. Further
 AI calls were stopped; billing was not enabled and no paid fallback was added.
-New generation will fail visibly until quota is available. The free launcher caps
+The backend now persists known provider cooldowns and rejects processing, tutor
+and extra-question requests before another provider call. The UI shows an
+approximate reset in the browser's timezone, disables these actions, permits
+drafts and downloads, and refreshes availability at reset or on explicit request.
+The current reset estimate is 2026-11-02 08:00 UTC / 13:30 IST, based on earlier
+provider metadata, not a new AI request. `AI_FREE_TIER=1` selects free-allowance
+copy; it does not change the provider account's billing settings.
+
+New generation remains unavailable until quota is available. The free launcher caps
 application calls at 20/day by default, but the provider quota also includes other
 uses of the same project. A typical image needs both vision/OCR and analysis calls;
 tutoring and media transcription also consume quota. Free operation does not imply
@@ -92,6 +100,33 @@ unlimited requests or dependable model availability.
 Private live reports, exported files, browser captures, SQLite databases and the
 portable tunnel binary stay in ignored data directories. No generated study
 content was hardcoded into the production application.
+
+## Quota update deployment and provider-switch attempt
+
+Local lint, 74 unit/API tests, typecheck, build, 21 browser tests, formatting,
+production smoke and parseable production exports passed. npm audit reported
+zero vulnerabilities. All four verification/container jobs for published
+`cbebe94` passed on GitHub; newer publication results must be checked separately.
+
+The first backend reload detached the original launcher. Its tunnel exited after
+the parent was terminated, and the old hostname returned Cloudflare 1033. Public
+access was restored with independently redirected backend/tunnel processes and
+the new URL above. The private database and files were retained. A before/after
+digest verified the original saved learning session was unchanged, and the
+learning-call counter was unchanged. Old guest cookies do not transfer to the new
+hostname; automatic guest recovery remains unimplemented.
+
+The new actual HTTPS URL was checked on 2026-11-01 at 12:27 UTC: health, secure
+sessions, foreign-origin rejection, cross-owner rejection, validated private PNG
+uploads/downloads, mobile draft creation/deletion, visible quota/reset notice,
+disabled processing and no billable-retry copy passed without AI calls.
+
+User-supplied replacement credentials were rejected with HTTP 401 by the
+documented Vercel AI Gateway and OpenAI authentication endpoints. No generation
+request was made with them, and the configured Gemini provider was preserved.
+A subsequent third-party credential requires the issuing service's documentation
+URL before its endpoint, privacy terms and image capability can be verified.
+Never share replacement secrets in chat; configure them in the backend `.env`.
 
 Remaining validation: representative learning inputs, tutor/media/YouTube live
 results, real handwriting, blind-user usability, account recovery and sustained

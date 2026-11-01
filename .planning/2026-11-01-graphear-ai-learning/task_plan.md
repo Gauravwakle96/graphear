@@ -66,6 +66,15 @@ Phase 10: verified temporary free demo; remaining live evaluations limited by pr
 - **Status:** complete
 
 ## Decisions Made
+
+### Phase 11: Free quota recovery and provider-switch request
+- [x] Persist known upstream cooldowns and prevent repeated processing/tutor calls
+- [x] Show approximate reset, free-allowance copy and availability refresh; preserve drafts/downloads
+- [x] Verify 74 unit/API tests, 21 browser tests, lint/typecheck/build, production smoke/exports, formatting and dependency audit
+- [x] Restore public tunnel after launcher detachment; compare the original private record with its backup
+- [ ] Connect the requested replacement provider: two authentication checks returned 401; latest third-party key needs its issuing documentation URL
+- **Status:** quota handling complete; provider change awaiting valid service/credentials
+
 | Decision | Rationale |
 |----------|-----------|
 | Add separate Learning feature | Preserve legacy graph model and local workflows |

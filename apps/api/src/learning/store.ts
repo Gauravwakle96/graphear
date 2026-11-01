@@ -48,6 +48,31 @@ export class LearningStore {
  CREATE INDEX IF NOT EXISTS learning_owner ON learning_sessions(owner);
  CREATE TABLE IF NOT EXISTS learning_calls(id INTEGER PRIMARY KEY,day TEXT NOT NULL,owner TEXT NOT NULL,session TEXT NOT NULL,task TEXT NOT NULL);
  CREATE INDEX IF NOT EXISTS learning_call_day ON learning_calls(day);`);
+    base.db.exec(
+      'CREATE TABLE IF NOT EXISTS ai_provider_cooldowns(key TEXT PRIMARY KEY,retry_at INTEGER NOT NULL,daily_quota INTEGER NOT NULL,free_tier INTEGER NOT NULL);',
+    );
+  }
+  cooldown(key: string) {
+    const row = this.base.db
+      .prepare('SELECT * FROM ai_provider_cooldowns WHERE key=? AND retry_at>?')
+      .get(key, Date.now());
+    return row
+      ? {
+          retryAt: Number(row.retry_at),
+          dailyQuota: Boolean(row.daily_quota),
+          freeTier: Boolean(row.free_tier),
+        }
+      : null;
+  }
+  blockProvider(key: string, state: { retryAt: number; dailyQuota: boolean; freeTier: boolean }) {
+    this.base.db
+      .prepare(
+        `INSERT INTO ai_provider_cooldowns VALUES(?,?,?,?) ON CONFLICT(key) DO UPDATE SET
+          daily_quota=CASE WHEN excluded.retry_at>=retry_at THEN excluded.daily_quota ELSE daily_quota END,
+          free_tier=CASE WHEN excluded.retry_at>=retry_at THEN excluded.free_tier ELSE free_tier END,
+          retry_at=MAX(retry_at,excluded.retry_at)`,
+      )
+      .run(key, state.retryAt, Number(state.dailyQuota), Number(state.freeTier));
   }
   create(
     owner: string,

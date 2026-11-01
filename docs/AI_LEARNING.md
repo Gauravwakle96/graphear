@@ -8,8 +8,8 @@ content. OpenAI and Gemini adapters call their actual APIs when configured.
 ## Backend setup
 
 Use Node 24+, npm, FFmpeg and FFprobe. FFmpeg 9.0.2 was available on the development
-machine. The Dockerfile includes FFmpeg, but its container build has not been
-verified here.
+machine. The Dockerfile includes FFmpeg; verification and persistence checks
+passed in Linux CI as recorded in [the release report](RELEASE_VERIFICATION.md).
 
 Copy `.env.example` to `.env` **only if `.env` does not already exist**. Set one of:
 
@@ -31,6 +31,13 @@ account; models are configurable. Never use `VITE_*` for secrets, paste a key in
 chat, commit `.env`, or reuse Codex authentication as an application API key.
 Generation and transcription are billable according to the provider. Set provider
 spending limits as well as the application's call limits.
+
+For a verified free-only account, set `AI_FREE_TIER=1`. This changes pricing copy;
+it does not disable billing at the provider. Known 429 cooldowns persist across
+backend restarts. The workspace shows an approximate reset, blocks additional
+AI requests during that cooldown, and lets students save drafts and download
+originals. Availability refresh makes no AI generation request. The current
+demo uses Gemini's exhausted free allowance; no paid fallback is configured.
 
 Open `http://127.0.0.1:5173/#learning`. Without a configured key, source drafts can
 be saved but AI processing is unavailable. Legacy local OCR remains usable without

@@ -198,4 +198,51 @@ describe('private learning API and durable jobs', () => {
     ).toBe(204);
     expect((await get(g, s.id)).status).toBe(404);
   });
+  it('preserves drafts and blocks processing and tutoring without provider calls during cooldown', async () => {
+    const g = await guest(),
+      ready = await create(g);
+    await done(g, ready.id);
+    const draft = await create(g, false),
+      before = calls;
+    const key = service.config.provider + ':' + service.config.model;
+    const retryAt = Date.now() + 3600_000;
+    service.store.blockProvider(key, { retryAt, dailyQuota: true, freeTier: true });
+    const config = await (await fetch(base + '/api/learning/config')).json();
+    expect(
+      (
+        await fetch(base + `/api/learning/${ready.id}/process`, {
+          method: 'POST',
+          headers: headers(g),
+        })
+      ).status,
+    ).toBe(200);
+    expect(config).toMatchObject({
+      available: false,
+      retryAt: new Date(retryAt).toISOString(),
+      unavailableReason: 'The free daily AI limit has been reached.',
+    });
+    for (const [id, name, body] of [
+      [draft.id, 'process', {}],
+      [ready.id, 'chat', { question: 'Who sends requests?', diagram: false }],
+      [ready.id, 'questions', { count: 1, difficulty: 'easy' }],
+    ] as const) {
+      const response = await fetch(base + `/api/learning/${id}/${name}`, {
+        method: 'POST',
+        headers: { ...headers(g), 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      expect(response.status).toBe(429);
+      expect((await response.json()).retryAt).toBe(new Date(retryAt).toISOString());
+    }
+    expect((await (await get(g, draft.id)).json()).status).toBe('draft');
+    expect(calls).toBe(before);
+    const other = await create(g, false);
+    expect((await get(g, other.id)).status).toBe(200);
+    service.store.blockProvider('expired:model', {
+      retryAt: Date.now() - 1,
+      dailyQuota: false,
+      freeTier: false,
+    });
+    expect(service.store.cooldown('expired:model')).toBeNull();
+  });
 });

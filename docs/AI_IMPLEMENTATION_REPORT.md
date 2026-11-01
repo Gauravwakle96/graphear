@@ -81,8 +81,11 @@ Manrope notation. This verdict is limited to those fixes. Formatting passed.
 Final publication/check results are recorded in
 [verification](VERIFICATION.md). The build reports large lazy Mermaid/ELK chunks;
 the editor loads ELK only when layout is requested. No load/performance benchmark
-for the new platform, container build, hosted deployment, penetration test or
-remote CI pass is claimed.
+for the new platform or penetration test is claimed. Container verification,
+temporary HTTPS deployment, later checks and provider limitations are recorded
+in [the release report](RELEASE_VERIFICATION.md). The quota update passed 74
+unit/API tests and 21 browser tests, production smoke/exports, lint, typecheck,
+build, formatting and a zero-vulnerability dependency audit.
 
 ## Required credentials and next validation
 
