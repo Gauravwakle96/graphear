@@ -2,7 +2,12 @@ import { randomUUID } from 'node:crypto';
 import { Router, type Request } from 'express';
 import multer from 'multer';
 import { z } from 'zod';
-import { optionsSchema, validateAnalysis } from '@graphear/core';
+import {
+  optionsSchema,
+  validateAnalysis,
+  quizSubmissionSchema,
+  gradeStudyTest,
+} from '@graphear/core';
 import type { Store } from '../store';
 import { aiConfig, configured, type AIConfig } from '../ai/config';
 import { LearningStore, publicLearning, type LearningInput } from './store';
@@ -45,8 +50,17 @@ export function learningRouter(
   router.get('/config', (_req, res) =>
     res.json({
       provider: config.provider,
+      providerLabel:
+        config.provider === 'compatible'
+          ? config.compatibleName + ' and its configured providers'
+          : config.provider === 'openai'
+            ? 'OpenAI'
+            : 'Gemini',
       model: config.model,
       configured: configured(config),
+      visionModel:
+        config.provider === 'compatible' ? config.compatibleVisionModel || null : config.model,
+      transcriptionConfigured: Boolean(config.transcriptionModel),
       ...service.availability(),
       captionsConfigured: Boolean(config.youtubeOAuth),
       limits: {
@@ -134,8 +148,12 @@ export function learningRouter(
       }
       if (type === 'youtube') {
         input.videoId = youtubeId(z.string().max(500).parse(req.body.url));
-        if (input.mime && !supportedMimes.mediaMimes.has(input.mime))
-          throw new Error('For a YouTube source, attach only authorized audio/video material');
+        if (
+          input.mime &&
+          !supportedMimes.mediaMimes.has(input.mime) &&
+          !supportedMimes.textMimes.has(input.mime)
+        )
+          throw new Error('For a YouTube source, attach an authorized recording or transcript');
         const metadata = await youtubeMetadata(input.videoId, config);
         input.url = metadata.url;
         input.name = metadata.title;
@@ -167,23 +185,87 @@ export function learningRouter(
     if (!s) return res.status(404).json({ error: 'Learning session not found in your workspace' });
     res.json(publicLearning(s));
   });
-  router.post('/:id/process', (req, res) => {
-    const s = owned(req, res.locals.owner);
-    if (!s) return res.sendStatus(404);
-    if (s.status === 'completed') return res.json(publicLearning(s));
-    if (!configured(config))
-      return res
-        .status(503)
-        .json({ error: 'Configure the selected AI provider key on the backend' });
-    if (!service.availability().available)
-      return res.status(429).json({
-        error: service.availability().unavailableReason,
-        retryAt: service.availability().retryAt,
-      });
-    if (['queued', 'extracting', 'generating'].includes(s.status))
-      return res.status(409).json({ error: 'This session is already processing' });
-    store.state(s.owner, s.id, 'queued', 0, 'Waiting for processing');
-    res.json(publicLearning(store.get(s.owner, s.id)!));
+  router.post('/:id/process', (req, res, next) => {
+    try {
+      const s = owned(req, res.locals.owner);
+      if (!s) return res.sendStatus(404);
+      if (s.status === 'completed') return res.json(publicLearning(s));
+      if (!configured(config))
+        return res
+          .status(503)
+          .json({ error: 'Configure the selected AI provider key on the backend' });
+      if (!service.availability().available)
+        return res.status(429).json({
+          error: service.availability().unavailableReason,
+          retryAt: service.availability().retryAt,
+        });
+      if (['queued', 'extracting', 'generating'].includes(s.status))
+        return res.status(409).json({ error: 'This session is already processing' });
+      const body = z
+        .object({
+          visualAnalysis: z.boolean().optional(),
+          revision: z.number().int().positive().optional(),
+        })
+        .strict()
+        .parse(req.body ?? {});
+      if (body.visualAnalysis !== undefined) {
+        if (body.revision !== s.revision)
+          return res
+            .status(409)
+            .json({ error: 'Session changed; reload before changing analysis settings' });
+        if (!body.visualAnalysis && !s.sources.some((src) => src.text.trim()))
+          return res.status(400).json({
+            error:
+              'No extracted text is available. This source needs image analysis or a supplied transcript.',
+          });
+        s.options = { ...s.options, visualAnalysis: body.visualAnalysis };
+        if (!store.write(s, body.revision))
+          return res.status(409).json({ error: 'Session changed; reload before processing' });
+      }
+      store.state(s.owner, s.id, 'queued', 0, 'Waiting for processing');
+      res.json(publicLearning(store.get(s.owner, s.id)!));
+    } catch (error) {
+      next(error);
+    }
+  });
+  router.post('/:id/source', (req, res, next) => {
+    try {
+      const s = owned(req, res.locals.owner);
+      if (!s) return res.status(404).json({ error: 'Learning session not found' });
+      if (
+        s.input.kind !== 'youtube' ||
+        s.analysis ||
+        ['queued', 'extracting', 'generating'].includes(s.status)
+      )
+        return res
+          .status(409)
+          .json({ error: 'Only an unprocessed YouTube source can receive a transcript' });
+      const body = z
+        .object({
+          text: z.string().trim().min(1).max(180000),
+          revision: z.number().int().positive(),
+        })
+        .strict()
+        .parse(req.body);
+      if (body.revision !== s.revision)
+        return res
+          .status(409)
+          .json({ error: 'Session changed; reload before adding the transcript' });
+      s.input.text = body.text;
+      s.sources = [];
+      s.status = 'draft';
+      s.progress = 0;
+      s.error = null;
+      s.message = 'Transcript saved; ready to process';
+      const saved = store.write(s);
+      if (!saved)
+        return res
+          .status(409)
+          .json({ error: 'Session changed; reload before adding the transcript' });
+      res.json(publicLearning(saved));
+    } catch (error) {
+      next(error);
+    }
   });
   router.post('/:id/cancel', (req, res) => {
     const s = owned(req, res.locals.owner);
@@ -258,25 +340,32 @@ export function learningRouter(
     try {
       const s = owned(req, res.locals.owner);
       if (!s?.analysis) return res.status(404).json({ error: 'No generated questions available' });
-      const body = z
-        .object({ answers: z.record(z.string().max(80), z.string().max(4000)) })
-        .strict()
-        .parse(req.body);
+      const body = quizSubmissionSchema.parse(req.body);
       const questions = s.analysis.questions;
-      if (
-        questions.some((q) => !body.answers[q.id]?.trim()) ||
-        Object.keys(body.answers).some((id) => !questions.some((q) => q.id === id))
-      )
-        return res.status(400).json({ error: 'Answer each question in the current test' });
-      const choice = questions.filter((q) => ['mcq', 'truefalse'].includes(q.kind));
+      if (!questions.length)
+        return res
+          .status(400)
+          .json({ error: 'Generate practice questions before submitting a test' });
+      let grade;
+      try {
+        grade = gradeStudyTest(questions, body.answers, body.mode === 'timed');
+      } catch (error) {
+        return res
+          .status(400)
+          .json({ error: error instanceof Error ? error.message : 'Invalid test answers' });
+      }
+      if (body.mode === 'timed' && !body.timeLimitSeconds)
+        return res.status(400).json({ error: 'Timed tests need a time limit' });
       s.quizAttempts = [
         ...s.quizAttempts,
         {
           id: randomUUID(),
           createdAt: new Date().toISOString(),
-          total: choice.length,
-          correct: choice.filter((q) => body.answers[q.id] === q.answer).length,
+          ...grade,
           answers: body.answers,
+          mode: body.mode,
+          durationSeconds: body.durationSeconds,
+          timeLimitSeconds: body.timeLimitSeconds,
         },
       ].slice(-50);
       const saved = store.write(s);

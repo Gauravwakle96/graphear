@@ -55,8 +55,12 @@ circuit ports, class attributes, biological structures, numbers, formulas, page
 references, timestamps, uncertainty and marked additional explanations. Record
 reviewer corrections; schema validity alone cannot certify meaning.
 
-The follow-up live run verified a synthetic raster flowchart and a separate
-structured network-text request. Remaining cases were blocked by overload,
-timeouts and Gemini's free daily quota. Synthetic handwriting-style text is not
-real handwriting. See [the release report](RELEASE_VERIFICATION.md) for measured
-results and outstanding representative evaluation.
+The latest compatible-provider run completed synthetic text, raster image and
+audio learning jobs. Exact image labels and a directed relationship were checked;
+an audio-generated timed quiz was submitted to the real backend. A real tutor
+answer was also checked. Video extraction/transcription succeeded, while video
+generation failed schema/source validation or upstream availability/quota.
+YouTube draft/attached-transcript handling passed at the public URL without AI
+calls; URL-only caption generation was not live-verified. Synthetic
+handwriting-style text is not real handwriting. See
+[the workflow report](LEARNING_WORKFLOW_UPGRADE.md) for the current results.

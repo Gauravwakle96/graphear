@@ -159,19 +159,21 @@ export function SourcesView({
   );
 }
 export function NotesView({
+  initialStyle = 'detailed',
   analysis,
   sources,
   onChange,
   onSource,
   disabled,
 }: {
+  initialStyle?: 'detailed' | 'short' | 'exam';
   analysis: StudyAnalysis;
   sources: Source[];
   onChange: (a: StudyAnalysis) => void;
   onSource: (id: string) => void;
   disabled: boolean;
 }) {
-  const [style, setStyle] = useState<'detailed' | 'short' | 'exam'>('detailed'),
+  const [style, setStyle] = useState<'detailed' | 'short' | 'exam'>(initialStyle),
     [editing, setEditing] = useState(false);
   return (
     <article className="study-notes">
@@ -360,7 +362,10 @@ export function RevisionView({
 }: {
   session: LearningSession;
   onGenerate: (count: number, difficulty: 'easy' | 'medium' | 'hard') => Promise<void>;
-  onResult: (answers: Record<string, string>) => Promise<void>;
+  onResult: (
+    answers: Record<string, string>,
+    settings?: { mode: 'practice' | 'timed'; timeLimitSeconds?: number; durationSeconds?: number },
+  ) => Promise<void>;
   onSource: (id: string) => void;
   busy: boolean;
   enabled: boolean;
@@ -372,7 +377,29 @@ export function RevisionView({
     [answers, setAnswers] = useState<Record<string, string>>({}),
     [submitted, setSubmitted] = useState(false),
     [count, setCount] = useState(session.options.questionCount),
-    [difficulty, setDifficulty] = useState(session.options.difficulty);
+    [difficulty, setDifficulty] = useState(session.options.difficulty),
+    [mode, setMode] = useState<'practice' | 'timed'>('practice'),
+    [minutes, setMinutes] = useState(10),
+    [remaining, setRemaining] = useState(600),
+    [deadline, setDeadline] = useState<number | null>(null),
+    [started, setStarted] = useState(false);
+  useEffect(() => {
+    if (deadline == null || submitted) return;
+    const tick = () => {
+      const seconds = Math.max(0, Math.ceil((deadline - Date.now()) / 1000));
+      setRemaining(seconds);
+      if (seconds === 0) setDeadline(null);
+    };
+    tick();
+    const timer = setInterval(tick, 500);
+    return () => clearInterval(timer);
+  }, [deadline, submitted]);
+  const locked = submitted || busy || (mode === 'timed' && (!started || remaining === 0));
+  const lastAttempt = session.quizAttempts.at(-1);
+  const missed = submitted ? (lastAttempt?.results?.filter((r) => r.correct === false) ?? []) : [];
+  const revisitTopics = analysis.topics.filter((t) =>
+    missed.some((r) => r.evidence.some((id) => t.evidence.includes(id))),
+  );
   const current = analysis.flashcards[card % Math.max(1, analysis.flashcards.length)];
   return (
     <section className="study-revision">
@@ -417,6 +444,90 @@ export function RevisionView({
         )
       ) : (
         <>
+          <div className="mode-switch" role="group" aria-label="Test mode">
+            <Button
+              aria-pressed={mode === 'practice'}
+              disabled={started && !submitted}
+              onClick={() => setMode('practice')}
+            >
+              Untimed quiz
+            </Button>
+            <Button
+              aria-pressed={mode === 'timed'}
+              disabled={started && !submitted}
+              onClick={() => setMode('timed')}
+            >
+              Timed test
+            </Button>
+          </div>
+          {mode === 'timed' && (
+            <section className="notice">
+              <h3>Exam practice timer</h3>
+              <label>
+                Time limit (minutes)
+                <input
+                  type="number"
+                  min={1}
+                  max={120}
+                  disabled={started}
+                  value={minutes}
+                  onChange={(e) => setMinutes(Math.max(1, Math.min(120, Number(e.target.value))))}
+                />
+              </label>
+              <p role="timer" aria-live="off">
+                Time remaining: {timestamp(remaining)}
+              </p>
+              <div className="study-toolbar">
+                {!started && (
+                  <Button
+                    disabled={busy}
+                    onClick={() => {
+                      setAnswers({});
+                      setSubmitted(false);
+                      setStarted(true);
+                      setRemaining(minutes * 60);
+                      setDeadline(Date.now() + minutes * 60000);
+                    }}
+                  >
+                    Start timed test
+                  </Button>
+                )}
+                {started && remaining > 0 && !submitted && (
+                  <Button
+                    disabled={busy}
+                    onClick={() =>
+                      setDeadline(deadline === null ? Date.now() + remaining * 1000 : null)
+                    }
+                  >
+                    {deadline === null ? 'Resume timer' : 'Pause timer'}
+                  </Button>
+                )}
+                {started && (
+                  <Button
+                    disabled={busy}
+                    onClick={() => {
+                      setStarted(false);
+                      setDeadline(null);
+                      setRemaining(minutes * 60);
+                      setSubmitted(false);
+                      setAnswers({});
+                    }}
+                  >
+                    Reset timed test
+                  </Button>
+                )}
+              </div>
+              {started && remaining === 0 && !submitted && (
+                <p role="status">
+                  Time is up. Submit your answers; unanswered choice questions count as incorrect.
+                </p>
+              )}
+              <p className="muted">
+                The timer is optional and can be paused. It resets when you leave this workspace.
+                This is self-paced practice.
+              </p>
+            </section>
+          )}
           <form
             className="study-practice-settings"
             onSubmit={(e) => {
@@ -450,7 +561,7 @@ export function RevisionView({
                 onChange={(e) => setCount(Math.max(1, Math.min(20, Number(e.target.value))))}
               />
             </label>
-            <Button type="submit" disabled={busy || !enabled}>
+            <Button type="submit" disabled={busy || !enabled || (started && !submitted)}>
               {busy ? 'Generating…' : 'Generate new test'}
             </Button>
           </form>
@@ -461,7 +572,16 @@ export function RevisionView({
           <form
             onSubmit={(e) => {
               e.preventDefault();
-              void onResult(answers)
+              void onResult(
+                answers,
+                mode === 'timed'
+                  ? {
+                      mode,
+                      timeLimitSeconds: minutes * 60,
+                      durationSeconds: minutes * 60 - remaining,
+                    }
+                  : { mode },
+              )
                 .then(() => setSubmitted(true))
                 .catch(() => undefined);
             }}
@@ -481,9 +601,9 @@ export function RevisionView({
                         type="radio"
                         name={q.id}
                         value={o}
-                        required
+                        required={mode === 'practice'}
                         checked={answers[q.id] === o}
-                        disabled={submitted}
+                        disabled={locked}
                         onChange={() => setAnswers({ ...answers, [q.id]: o })}
                       />
                       {o}
@@ -493,10 +613,10 @@ export function RevisionView({
                   <label>
                     Your answer
                     <textarea
-                      required
+                      required={mode === 'practice'}
                       value={answers[q.id] ?? ''}
                       maxLength={4000}
-                      disabled={submitted}
+                      disabled={locked}
                       rows={3}
                       onChange={(e) => setAnswers({ ...answers, [q.id]: e.target.value })}
                     />
@@ -519,7 +639,11 @@ export function RevisionView({
               </fieldset>
             ))}
             {analysis.questions.length > 0 && (
-              <Button variant="primary" type="submit" disabled={submitted || busy}>
+              <Button
+                variant="primary"
+                type="submit"
+                disabled={submitted || busy || (mode === 'timed' && !started)}
+              >
                 Check answers and save attempt
               </Button>
             )}
@@ -528,12 +652,29 @@ export function RevisionView({
                 onClick={() => {
                   setAnswers({});
                   setSubmitted(false);
+                  setStarted(false);
+                  setDeadline(null);
                 }}
               >
                 Try again
               </Button>
             )}
           </form>
+          {submitted && missed.length > 0 && (
+            <section className="notice">
+              <h3>What to revise next</h3>
+              {revisitTopics.length > 0 && (
+                <p>Revisit: {revisitTopics.map((t) => t.title).join(', ')}.</p>
+              )}
+              {missed.map((r) => (
+                <article key={r.questionId}>
+                  <h4>{r.prompt}</h4>
+                  <p>{r.explanation}</p>
+                  <Citations ids={r.evidence} sources={session.sources} onSource={onSource} />
+                </article>
+              ))}
+            </section>
+          )}
         </>
       )}
       {session.quizAttempts.length > 0 && (
@@ -547,6 +688,7 @@ export function RevisionView({
                 <li key={a.id}>
                   {new Date(a.createdAt).toLocaleString()} · {a.correct}/{a.total} automatically
                   checked answers correct
+                  {a.mode === 'timed' && ' · Timed practice'}
                 </li>
               ))}
           </ul>

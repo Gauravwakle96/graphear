@@ -52,6 +52,24 @@ const sessionSchema = z.object({
         correct: z.number(),
         total: z.number(),
         answers: z.record(z.string(), z.string()),
+        mode: z.enum(['practice', 'timed']).optional(),
+        durationSeconds: z.number().int().nonnegative().optional(),
+        timeLimitSeconds: z.number().int().positive().optional(),
+        results: z
+          .array(
+            z.object({
+              questionId: z.string(),
+              prompt: z.string(),
+              kind: z.enum(['mcq', 'fill', 'truefalse', 'short', 'long']),
+              givenAnswer: z.string(),
+              answer: z.string(),
+              explanation: z.string(),
+              evidence: z.array(z.string()),
+              correct: z.boolean().nullable(),
+            }),
+          )
+          .max(30)
+          .optional(),
       }),
     )
     .default([]),
@@ -63,6 +81,9 @@ export type LearningSummary = Pick<
 >;
 export type LearningConfig = {
   provider: string;
+  providerLabel?: string;
+  visionModel?: string | null;
+  transcriptionConfigured?: boolean;
   model: string;
   configured: boolean;
   available: boolean;

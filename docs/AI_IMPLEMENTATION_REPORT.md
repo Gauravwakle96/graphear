@@ -6,8 +6,14 @@ legacy local OCR, graph exploration, repair, sharing and exports were preserved.
 The inspected design and architecture are recorded in
 [the implementation plan](AI_IMPLEMENTATION_PLAN.md).
 
-**Live Gemini generation and a free HTTPS demo have now been verified on bounded
-synthetic sources.** The initial implementation checks below are supplemented by
+**The current free HTTPS demo uses FreeLLMAPI.** Real text, image and audio
+learning jobs succeeded on bounded synthetic sources. Video extraction worked,
+but live generation failed validation or upstream availability/quota. YouTube
+needs permitted captions or an authorized supplied transcript/recording.
+The latest increment adds uploaded text/subtitles, learner preferences, saved
+YouTube transcript drafts, timed tests and source-topic revision feedback.
+See [the current workflow report](LEARNING_WORKFLOW_UPGRADE.md).
+The historical initial implementation checks below are supplemented by
 [the release report](RELEASE_VERIFICATION.md), including actual live results,
 free-quota failures and the temporary hosting limits. Production contains no mock
 provider or hardcoded generated notes. Automated provider/completed-session tests
@@ -25,7 +31,7 @@ use explicitly synthetic responses and must not be presented as live AI results.
 | YouTube        | URL validation, official metadata/caption access, supplied transcript or authorized recording fallback                   | Caption download needs appropriate OAuth rights; no restricted downloader                                  |
 | Diagrams       | Validated JSON, category-specific data, React Flow editor, ELK layout, Mermaid-compatible notation, escaped SVG          | Circuit/UML/scientific details use custom schematics; no claim of validated anatomy or circuit correctness |
 | Notes          | Detailed, short and exam formats; definitions, explanations, components, applications, tables, citations and uncertainty | Additional explanations marked separately; citations do not prove factual accuracy                         |
-| Tutor          | Questions about stored source material and notes, cited answers, optional additional diagrams, chat history              | Uses real configured provider; no live tutor evaluation performed                                          |
+| Tutor          | Questions about stored source material and notes, cited answers, optional additional diagrams, chat history              | One real gateway client/server answer checked; representative tutoring remains unverified                  |
 | Revision       | Flashcards, mixed practice questions, difficulty/count selection, saved attempts and explanations                        | Choice answers auto-graded; written answers use self-review                                                |
 | Sessions       | Private saved workspaces, renaming, edits, revision conflicts, retry/cancel, deletion and retention                      | Existing guest authentication retained; no new account/recovery system                                     |
 | Exports        | Notes PDF/DOCX/Markdown, flashcards PDF, diagram SVG/PNG, complete study ZIP                                             | PDF has limited font coverage; unsupported glyphs fail explicitly, ZIP records the limitation              |
@@ -58,7 +64,7 @@ Automatic layout reduces overlap; manual source review remains necessary.
   `data/backups/before-ai-learning.sqlite`. No secrets or uploaded materials belong
   in the publication. API configuration exposes availability, never key values.
 
-## Verification
+## Initial implementation verification (historical)
 
 Verification was performed locally on Windows, Node 24 and Chrome.
 
@@ -89,7 +95,7 @@ build, formatting and a zero-vulnerability dependency audit.
 
 ## Required credentials and next validation
 
-Set either `OPENAI_API_KEY` or `GEMINI_API_KEY` in the **backend `.env`**, select
+Set `COMPATIBLE_API_KEY`, `OPENAI_API_KEY` or `GEMINI_API_KEY` in the **backend `.env`**, select
 `AI_PROVIDER`, and choose a model available to that account. Defaults and all
 limits are documented in [.env.example](../.env.example) and
 [setup instructions](AI_LEARNING.md). Preserve an existing `.env`; never use

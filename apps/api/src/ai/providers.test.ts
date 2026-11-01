@@ -1,10 +1,239 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { z } from 'zod';
-import { AIQuotaError, OpenAIProvider, GeminiProvider } from './providers';
-import { aiConfig } from './config';
+import {
+  AIQuotaError,
+  OpenAIProvider,
+  GeminiProvider,
+  CompatibleProvider,
+  makeProvider,
+} from './providers';
+import { aiConfig, configured, providerBaseURL } from './config';
 const schema = z.object({ answer: z.string() }).strict();
 afterEach(() => vi.unstubAllGlobals());
 describe('documented HTTP provider contracts (test responses only)', () => {
+  it('validates operator URLs and requires a model and key for compatible gateways', () => {
+    for (const url of [
+      'http://169.254.169.254/v1',
+      'http://api.example.test/v1',
+      'https://user:password@example.test/v1',
+      'https://example.test/v1?key=secret',
+      'file:///tmp/api',
+    ])
+      expect(() => providerBaseURL(url)).toThrow();
+    expect(providerBaseURL('http://127.0.0.1:31415/v1/')).toBe('http://127.0.0.1:31415/v1');
+    expect(providerBaseURL('https://gateway.example.test/v1')).toBe(
+      'https://gateway.example.test/v1',
+    );
+    const config = {
+      ...aiConfig(),
+      provider: 'compatible' as const,
+      compatibleKey: 'test-only',
+      model: '',
+    };
+    expect(configured(config)).toBe(false);
+    expect(configured({ ...config, model: 'text-model' })).toBe(true);
+    expect(makeProvider(config)).toBeInstanceOf(CompatibleProvider);
+  });
+  it('respects a gateway absolute retry time without exposing its raw error', async () => {
+    const retryAtMs = Date.now() + 180000;
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () =>
+        Response.json(
+          {
+            error: { type: 'rate_limit_error', message: 'private account information', retryAtMs },
+          },
+          { status: 429 },
+        ),
+      ),
+    );
+    const provider = new CompatibleProvider({ ...aiConfig(), compatibleAPI: 'responses' });
+    await expect(
+      provider.generate({
+        instruction: '',
+        context: '',
+        schema,
+        name: 'test',
+        signal: AbortSignal.timeout(1000),
+      }),
+    ).rejects.toMatchObject({ retryAt: retryAtMs });
+  });
+  it('routes compatible Responses vision to its explicit model with server-only credentials', async () => {
+    const calls: { url: string; body: Record<string, unknown>; headers: Headers }[] = [];
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url, init) => {
+        calls.push({
+          url: String(url),
+          body: JSON.parse(init.body),
+          headers: new Headers(init.headers),
+        });
+        expect(init.redirect).toBe('error');
+        return Response.json({ output_text: '{"answer":"validated"}' });
+      }),
+    );
+    const provider = new CompatibleProvider({
+      ...aiConfig(),
+      compatibleBaseURL: 'http://127.0.0.1:31415/v1',
+      compatibleKey: 'test-only-local-key',
+      compatibleAPI: 'responses',
+      model: 'text-model',
+      compatibleVisionModel: 'vision-model',
+    });
+    const request = {
+      instruction: 'source rules',
+      context: 'source',
+      schema,
+      name: 'test',
+      signal: AbortSignal.timeout(1000),
+    };
+    expect(await provider.generate(request)).toEqual({ answer: 'validated' });
+    expect(
+      await provider.generate({ ...request, images: [{ mime: 'image/png', data: 'test' }] }),
+    ).toEqual({ answer: 'validated' });
+    expect(calls.map((c) => c.url)).toEqual([
+      'http://127.0.0.1:31415/v1/responses',
+      'http://127.0.0.1:31415/v1/responses',
+    ]);
+    expect(calls.map((c) => c.body.model)).toEqual(['text-model', 'vision-model']);
+    expect(calls[1].headers.get('Authorization')).toBe('Bearer test-only-local-key');
+    expect(calls[1].body.store).toBe(false);
+    expect(calls[1].body.max_output_tokens).toBe(4096);
+    expect(JSON.stringify(calls[1].body)).toContain('input_image');
+    expect(JSON.stringify(calls[1].body)).not.toContain('test-only-local-key');
+  });
+  it('supports compatible Chat Completions and rejects incomplete and invalid structured content', async () => {
+    const provider = new CompatibleProvider({
+      ...aiConfig(),
+      compatibleAPI: 'chat',
+      model: 'text-model',
+    });
+    const request = {
+      instruction: 'rules',
+      context: 'source',
+      schema,
+      name: 'test',
+      signal: AbortSignal.timeout(1000),
+    };
+    let body: Record<string, unknown> = {};
+    let endpoint = '';
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url, init) => {
+        endpoint = String(url);
+        body = JSON.parse(init.body);
+        return Response.json({
+          choices: [{ finish_reason: 'stop', message: { content: '{"answer":"ok"}' } }],
+        });
+      }),
+    );
+    expect(await provider.generate(request)).toEqual({ answer: 'ok' });
+    expect(endpoint).toMatch(/\/v1\/chat\/completions$/);
+    expect(body.response_format).toMatchObject({
+      type: 'json_schema',
+      json_schema: { strict: true },
+    });
+    for (const [finish, text] of [
+      ['length', '{"answer":"partial"}'],
+      ['stop', '{"unknown":"invalid"}'],
+    ]) {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async () =>
+          Response.json({ choices: [{ finish_reason: finish, message: { content: text } }] }),
+        ),
+      );
+      await expect(provider.generate(request)).rejects.toThrow();
+    }
+  });
+  it('uses explicit JSON mode with the full prompt schema and rejects invalid generated values', async () => {
+    const provider = new CompatibleProvider({
+      ...aiConfig(),
+      compatibleStructuredOutput: 'json_object',
+      compatibleAPI: 'responses',
+    });
+    let body: Record<string, unknown> = {};
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (_url, init) => {
+        body = JSON.parse(init.body);
+        return Response.json({ output_text: '{"answer":"ok"}' });
+      }),
+    );
+    const request = {
+      instruction: 'Source rules',
+      context: 'Source',
+      schema,
+      name: 'test',
+      signal: AbortSignal.timeout(1000),
+    };
+    expect(await provider.generate(request)).toEqual({ answer: 'ok' });
+    expect(body.text).toEqual({ format: { type: 'json_object' } });
+    expect(String(body.instructions)).toContain('Source rules');
+    expect(String(body.instructions)).toContain('"required":["answer"]');
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => Response.json({ output_text: '{"unknown":"invalid"}' })),
+    );
+    await expect(provider.generate(request)).rejects.toThrow();
+  });
+  it('fails before a gateway call when vision or transcription is not configured', async () => {
+    const fetcher = vi.fn();
+    vi.stubGlobal('fetch', fetcher);
+    const provider = new CompatibleProvider({
+      ...aiConfig(),
+      compatibleVisionModel: '',
+      transcriptionModel: '',
+    });
+    await expect(
+      provider.generate({
+        instruction: '',
+        context: '',
+        images: [{ mime: 'image/png', data: 'test' }],
+        schema,
+        name: 'test',
+        signal: AbortSignal.timeout(1000),
+      }),
+    ).rejects.toThrow(/vision model/);
+    await expect(
+      provider.transcribe(new Uint8Array([1]), 'audio/wav', AbortSignal.timeout(1000)),
+    ).rejects.toThrow(/transcription is not configured/);
+    expect(fetcher).not.toHaveBeenCalled();
+  });
+  it('uses only the gateway transcription endpoint and gives a safe offline error', async () => {
+    const provider = new CompatibleProvider({
+      ...aiConfig(),
+      compatibleKey: 'test-only-local-key',
+      transcriptionModel: 'transcription-model',
+    });
+    let endpoint = '';
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url) => {
+        endpoint = String(url);
+        return Response.json({ text: 'A client sends a request.' });
+      }),
+    );
+    expect(
+      await provider.transcribe(new Uint8Array([1]), 'audio/wav', AbortSignal.timeout(1000)),
+    ).toBe('A client sends a request.');
+    expect(endpoint).toBe('http://127.0.0.1:31415/v1/audio/transcriptions');
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => {
+        throw new TypeError('private connection details');
+      }),
+    );
+    await expect(
+      provider.generate({
+        instruction: '',
+        context: '',
+        schema,
+        name: 'test',
+        signal: AbortSignal.timeout(1000),
+      }),
+    ).rejects.toThrow(/gateway is unreachable/);
+  });
   it('extracts a safe free-quota reset time without exposing provider details', async () => {
     vi.stubGlobal(
       'fetch',

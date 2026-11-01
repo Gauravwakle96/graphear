@@ -2,7 +2,37 @@ import { test, expect, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { testAnalysis, testSources } from '../packages/core/src/study.test-support';
 import type { LearningSession } from '../apps/web/src/lib/learning-api';
+import { gradeStudyTest } from '../packages/core/src/study';
 const fixtureId = '6a29e291-4855-412f-9dc3-e6db567b6a77';
+test('offers an explicit text-only retry without claiming original figure reconstruction', async ({
+  page,
+}) => {
+  const initial = {
+    ...session(),
+    status: 'failed' as const,
+    analysis: null,
+    error: 'AI provider temporarily unavailable',
+    sources: testSources.map((s) => ({
+      ...s,
+      asset: `/api/learning/${fixtureId}/sources/${s.id}`,
+    })),
+  };
+  await prepared(page, initial);
+  let body: unknown;
+  await page.route(`**/api/learning/${fixtureId}/process`, (r) => {
+    body = r.request().postDataJSON();
+    return r.fulfill({
+      json: {
+        ...initial,
+        status: 'queued',
+        options: { ...initial.options, visualAnalysis: false },
+      },
+    });
+  });
+  await expect(page.getByText(/Original figures will not be inspected/)).toBeVisible();
+  await page.getByRole('button', { name: 'Retry using extracted text', exact: true }).click();
+  await expect.poll(() => body).toEqual({ visualAnalysis: false, revision: initial.revision });
+});
 function session(): LearningSession {
   return {
     id: fixtureId,
@@ -98,15 +128,16 @@ async function prepared(page: Page, initial = session()) {
     await r.fulfill({ json: current });
   });
   await page.route(`**/api/learning/${fixtureId}/quiz`, async (r) => {
+    const body = r.request().postDataJSON();
     current = {
       ...current,
       quizAttempts: [
         {
           id: 'attempt',
           createdAt: new Date().toISOString(),
-          correct: 1,
-          total: 1,
-          answers: { q1: 'Client' },
+          ...gradeStudyTest(current.analysis!.questions, body.answers, body.mode === 'timed'),
+          answers: body.answers,
+          mode: body.mode,
         },
       ] as never,
     };
@@ -205,6 +236,56 @@ test('test-fixture diagrams support keyboard editing, notation and PNG export', 
     path: '.impeccable/review/learning-diagram-fixture.png',
     fullPage: true,
   });
+});
+test('student preferences persist in real private drafts without AI calls', async ({ page }) => {
+  await page.goto('/#learning');
+  await page.getByRole('heading', { name: 'What are you learning today?' }).waitFor();
+  await page.getByRole('button', { name: 'Paste text', exact: true }).click();
+  await page
+    .getByLabel('Educational content', { exact: true })
+    .fill('A client sends a request to a server.');
+  await page.getByLabel('Learning level', { exact: true }).selectOption('beginner');
+  await page.getByLabel('Study goal', { exact: true }).selectOption('exam');
+  await page.getByLabel('Preferred notes', { exact: true }).selectOption('short');
+  await page.getByLabel('Quiz difficulty', { exact: true }).selectOption('easy');
+  await page.getByLabel('Practice questions', { exact: true }).fill('3');
+  await page.getByLabel(/I’m authorized/).check();
+  const saved = page.waitForResponse(
+    (r) => r.url().endsWith('/api/learning') && r.request().method() === 'POST',
+  );
+  await page.getByRole('button', { name: 'Save source draft', exact: true }).click();
+  const response = await saved;
+  expect(response.status()).toBe(201);
+  const record = await response.json();
+  expect(record.options).toMatchObject({
+    learningLevel: 'beginner',
+    learningGoal: 'exam',
+    noteStyle: 'short',
+    difficulty: 'easy',
+    questionCount: 3,
+  });
+  await page.getByRole('button', { name: 'Delete session', exact: true }).click();
+  await page.getByRole('button', { name: 'Delete permanently', exact: true }).click();
+});
+test('timed practice pauses, expires and saves unanswered questions with revision feedback', async ({
+  page,
+}) => {
+  await page.clock.install();
+  await prepared(page);
+  await page.getByRole('button', { name: 'Revision', exact: true }).click();
+  await page.getByRole('button', { name: 'Practice test', exact: true }).click();
+  await page.getByRole('button', { name: 'Timed test', exact: true }).click();
+  await page.getByLabel('Time limit (minutes)', { exact: true }).fill('1');
+  await page.getByRole('button', { name: 'Start timed test', exact: true }).click();
+  await page.getByRole('button', { name: 'Pause timer', exact: true }).click();
+  await page.clock.fastForward(10000);
+  await expect(page.getByRole('timer')).toHaveText('Time remaining: 1:00');
+  await page.getByRole('button', { name: 'Resume timer', exact: true }).click();
+  await page.clock.fastForward(61000);
+  await expect(page.getByText(/Time is up/)).toBeVisible();
+  await page.getByRole('button', { name: 'Check answers and save attempt' }).click();
+  await expect(page.getByRole('heading', { name: 'What to revise next' })).toBeVisible();
+  await expect(page.getByText(/0\/1 automatically checked answers/)).toBeVisible();
 });
 test('test-fixture tutor, flashcards and quiz explanations are interactive', async ({ page }) => {
   await prepared(page);

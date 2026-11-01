@@ -1,6 +1,12 @@
 import { randomUUID } from 'node:crypto';
 import type { Store } from '../store';
-import type { Source, StudyAnalysis, StudyOptions, TutorAnswer } from '@graphear/core';
+import type {
+  Source,
+  StudyAnalysis,
+  StudyOptions,
+  TutorAnswer,
+  StudyQuestionResult,
+} from '@graphear/core';
 export type LearningInput = {
   kind: 'file' | 'text' | 'youtube';
   name: string;
@@ -21,6 +27,10 @@ export type QuizAttempt = {
   correct: number;
   total: number;
   answers: Record<string, string>;
+  mode?: 'practice' | 'timed';
+  durationSeconds?: number;
+  timeLimitSeconds?: number;
+  results?: StudyQuestionResult[];
 };
 export type LearningSession = {
   id: string;
@@ -206,14 +216,15 @@ export class LearningStore {
       const job = Number(
         this.base.db
           .prepare(
-            "SELECT COUNT(*) AS n FROM learning_calls WHERE session=? AND task IN ('analysis','ocr','transcription')",
+            "SELECT COUNT(*) AS n FROM learning_calls WHERE session=? AND task IN ('analysis','ocr','transcription','analysis:repair','ocr:repair','transcription:repair')",
           )
           .get(session)?.n ?? 0,
       );
       if (
         total >= dailyLimit ||
         user >= Math.min(25, dailyLimit) ||
-        (['analysis', 'ocr', 'transcription'].includes(task) && job >= jobLimit)
+        (['analysis', 'ocr', 'transcription'].includes(task.replace(/:repair$/, '')) &&
+          job >= jobLimit)
       )
         throw new Error(
           'AI call budget reached. Increase the configured limit or try another day.',

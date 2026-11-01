@@ -12,6 +12,7 @@ import { timestamp } from '@graphear/core';
 import type { AIConfig } from '../ai/config';
 import type { VisionInput } from '../ai/providers';
 import type { LearningInput } from './store';
+import { transcriptSources } from './youtube';
 const imageMimes = new Set(['image/png', 'image/jpeg', 'image/webp']);
 const mediaMimes = new Set([
   'video/mp4',
@@ -25,7 +26,27 @@ const mediaMimes = new Set([
   'audio/x-m4a',
   'audio/ogg',
 ]);
-export const supportedMimes = { imageMimes, mediaMimes };
+const textMimes = new Set(['text/plain', 'text/markdown', 'text/vtt', 'application/x-subrip']);
+export const supportedMimes = { imageMimes, mediaMimes, textMimes };
+export function validatedText(buffer: Uint8Array) {
+  if (buffer.byteLength > 1_000_000)
+    throw new Error('Text notes and transcripts are limited to 1 MB');
+  let text: string;
+  try {
+    text = new TextDecoder('utf-8', { fatal: true }).decode(buffer);
+  } catch {
+    throw new Error('Text notes and transcripts must use valid UTF-8 encoding');
+  }
+  if (
+    !text.trim() ||
+    [...text].some(
+      (char) => char.charCodeAt(0) < 32 && ![9, 10, 12, 13].includes(char.charCodeAt(0)),
+    )
+  )
+    throw new Error('Text notes contain empty or unsupported binary content');
+  if (text.length > 180000) throw new Error('Text notes are limited to 180,000 characters');
+  return text.replace(/^\uFEFF/, '');
+}
 export function inside(root: string, path: string) {
   const resolved = resolve(path),
     base = resolve(root);
@@ -113,7 +134,22 @@ export async function persistUpload(buffer: Buffer, name: string, config: AIConf
     mp3: ['audio/mpeg'],
     wav: ['audio/wav', 'audio/x-wav'],
     m4a: ['audio/mp4', 'audio/x-m4a', 'video/mp4'],
+    txt: ['text/plain'],
+    md: ['text/markdown'],
+    vtt: ['text/vtt'],
+    srt: ['application/x-subrip'],
   };
+  if (ext && ['txt', 'md', 'vtt', 'srt'].includes(ext)) {
+    if (type && !allowed[ext].includes(type.mime))
+      throw new Error('Text file contents do not match its extension');
+    const text = validatedText(buffer);
+    if (ext === 'vtt' || ext === 'srt') {
+      if (!text.includes('-->')) throw new Error('Subtitle file needs valid caption intervals');
+      transcriptSources(text);
+    }
+    mime = allowed[ext][0];
+    canonical = ext;
+  }
   if (!ext || !mime || !allowed[ext]?.includes(mime))
     throw new Error('Choose a supported file whose contents match its extension');
   if (ext === 'docx' || ext === 'pptx') {
@@ -137,6 +173,7 @@ export async function persistUpload(buffer: Buffer, name: string, config: AIConf
     !mime ||
     (!imageMimes.has(mime) &&
       !mediaMimes.has(mime) &&
+      !textMimes.has(mime) &&
       ![
         'application/pdf',
         'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
@@ -260,6 +297,10 @@ export async function extractDocument(
   try {
     const result: Extraction = { sources: [], images: [], warnings: [], duration: null };
     if (input.kind === 'text' || (!input.path && input.text)) {
+      if (input.kind === 'youtube') {
+        result.sources = transcriptSources(input.text);
+        return result;
+      }
       for (let i = 0; i < input.text.length; i += 10000)
         result.sources.push(
           source(
@@ -277,6 +318,26 @@ export async function extractDocument(
       );
     const data = await readFile(inside(rootConfig.uploadDir, input.path));
     signal.throwIfAborted();
+    if (textMimes.has(input.mime ?? '')) {
+      const text = validatedText(data);
+      if (
+        input.kind === 'youtube' ||
+        input.mime === 'text/vtt' ||
+        input.mime === 'application/x-subrip'
+      )
+        result.sources = transcriptSources(text);
+      else
+        for (let i = 0; i < text.length; i += 10000)
+          result.sources.push(
+            source(
+              'text' + i,
+              'Notes section ' + (Math.floor(i / 10000) + 1),
+              'text',
+              text.slice(i, i + 10000),
+            ),
+          );
+      return result;
+    }
     if (imageMimes.has(input.mime ?? '')) {
       const asset = await rasterAsset(data, 'image', config);
       result.sources.push(

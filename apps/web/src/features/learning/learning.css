@@ -65,6 +65,23 @@
   flex-wrap: wrap;
   gap: 10px;
 }
+.study-learning-settings {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 18px;
+}
+.study-learning-settings legend {
+  padding: 0 6px;
+  font-weight: 700;
+}
+@media (max-width: 600px) {
+  .study-learning-settings {
+    grid-template-columns: 1fr;
+  }
+}
 .learning-page .mode-switch .button[aria-pressed='true'] {
   background: var(--surface);
   border-color: var(--line);

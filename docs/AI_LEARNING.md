@@ -3,7 +3,8 @@
 This upgrade adds an AI Learning area alongside the existing local diagram
 workspace. The existing React/TypeScript, Express and SQLite application is
 retained. There is no production mock provider or hardcoded generated learning
-content. OpenAI and Gemini adapters call their actual APIs when configured.
+content. OpenAI, Gemini and explicitly configured OpenAI-compatible gateway
+adapters call their actual APIs when configured.
 
 ## Backend setup
 
@@ -37,7 +38,47 @@ it does not disable billing at the provider. Known 429 cooldowns persist across
 backend restarts. The workspace shows an approximate reset, blocks additional
 AI requests during that cooldown, and lets students save drafts and download
 originals. Availability refresh makes no AI generation request. The current
-demo uses Gemini's exhausted free allowance; no paid fallback is configured.
+demo uses the supplied local FreeLLMAPI gateway; no paid fallback is configured.
+
+### Local FreeLLMAPI gateway
+
+The compatible adapter supports the supplied local gateway and both its
+`/v1/responses` and `/v1/chat/completions` endpoints. Configure the following
+non-secret settings in the existing backend `.env`; retain other credentials:
+
+```dotenv
+AI_PROVIDER=compatible
+AI_FREE_TIER=1
+COMPATIBLE_NAME=FreeLLMAPI
+COMPATIBLE_BASE_URL=http://127.0.0.1:31415/v1
+COMPATIBLE_API=responses
+COMPATIBLE_MODEL=gpt-oss-120b
+COMPATIBLE_VISION_MODEL=qwen3-vl-plus
+COMPATIBLE_STRUCTURED_OUTPUT=json_object
+COMPATIBLE_REPAIR_INVALID_JSON=1
+COMPATIBLE_TRANSCRIPTION_MODEL=whisper-large-v3-turbo
+COMPATIBLE_MAX_OUTPUT_TOKENS=4096
+```
+
+Set `COMPATIBLE_API_KEY` privately on the backend. Text, vision and transcription
+models must be available through that gateway; model discovery alone does not
+prove a working generation. The gateway uses configured upstream services, so
+this is not offline AI or the official OpenAI API. The consent form names the
+gateway and its configured providers. Free routes still have quotas and can fail.
+No automatic paid-provider fallback is added by Graphear.
+
+Prefer `json_schema` with models/upstreams supporting strict structured output.
+For a gateway that only supports JSON mode, explicitly select
+`COMPATIBLE_STRUCTURED_OUTPUT=json_object`; the complete schema is then included
+in the prompt. Both modes validate the same structure and source relationships.
+An optional single corrective generation consumes the existing daily and job
+budgets. Invalid corrections are rejected, and quota/timeouts are not retried.
+
+The local URL is reachable only from a backend on the same computer. It cannot
+be reached from an unrelated cloud host, and container loopback is a different
+network namespace. Remote gateway URLs require HTTPS. Keep gateway credentials
+out of browser configuration, and leave the gateway application running while
+using the public laptop-hosted demo.
 
 Open `http://127.0.0.1:5173/#learning`. Without a configured key, source drafts can
 be saved but AI processing is unavailable. Legacy local OCR remains usable without
@@ -56,6 +97,18 @@ an AI provider.
 | YouTube URL      | Public URL validation, permitted metadata/captions or supplied transcript/authorized recording | Caption intervals when available           |
 | Pasted text      | Bounded source sections, structured analysis                                                   | Text sections                              |
 
+TXT/Markdown notes and VTT/SRT subtitles are also supported, limited to 1 MB,
+valid UTF-8 and 180,000 characters. Caption uploads and timestamped pasted
+transcripts retain supplied times. Select learning level, study goal, preferred
+notes, quiz difficulty and question count before upload. These preferences guide
+the analysis and are saved with the session.
+
+A YouTube URL without permitted caption access can be saved as a draft. Paste or
+attach an authorized transcript, or attach a recording you have permission to
+process. A saved unprocessed YouTube draft can receive pasted text through its
+source form. Adding a transcript makes no AI call. URL-only automatic processing
+of arbitrary public videos is not available without appropriate caption rights.
+
 Generated material includes detailed, short and exam notes; marked additional
 explanations and uncertainty; topic references; source-grounded tables;
 typed diagrams; flashcards; mixed practice questions and explanations.
@@ -67,6 +120,20 @@ notes and recent chat; optional additional diagrams are saved to the same sessio
 Tests allow difficulty/count selection. Choice answers are graded automatically;
 written answers require self-review. Attempts persist, with scores explicitly
 limited to automatically checked choices.
+
+Revision includes untimed quizzes and optional timed tests with start, pause,
+resume, reset and explicit submission. Unanswered choices in a timed test count
+incorrect. Attempts retain question, answer, explanation and evidence snapshots.
+Incorrect choices suggest related source topics to revisit without another AI
+request. Written answers remain self-reviewed. The timer is browser-based
+practice, resets when leaving the workspace, and is not a proctored exam.
+
+Failed sources with extracted text and figures expose **Retry using extracted
+text**. The server checks ownership and the current revision, retains the original
+and page references, skips image analysis and adds a figure-coverage warning.
+This can reduce visual requests; it does not guarantee that the text provider is
+available. A source without extracted text cannot use it. **Retry with image
+analysis** restores the full visual path after a text-only attempt.
 
 Exports include PDF, DOCX, Markdown, flashcards PDF, SVG, PNG and a ZIP with notes,
 diagram representations, source references, chat and practice history. Original
@@ -123,10 +190,15 @@ and have no account recovery. No learning-session public sharing endpoint exists
 
 ## Material limitations
 
-Live Gemini generation and one complete raster flowchart workflow were verified
-with synthetic sources. Other live cases hit provider overload, timeouts and the
-free daily quota. Representative handwriting and subject-level accuracy remain
-unverified. See [the release report](RELEASE_VERIFICATION.md). Automated HTTP
+Real FreeLLMAPI text-to-learning, raster image-to-learning and uploaded
+audio-to-learning jobs succeeded on authorized synthetic sources. Exact image
+labels and arrow direction were checked; audio questions were submitted and
+scored by the real API. Live video extraction and transcription succeeded, but
+generation failed validation or encountered upstream unavailability/quota.
+Video-to-notes is therefore not live-verified successfully. Representative
+handwriting and subject-level accuracy remain unverified. See
+[the workflow report](LEARNING_WORKFLOW_UPGRADE.md) and
+[the release report](RELEASE_VERIFICATION.md). Automated HTTP
 contract tests use explicitly synthetic responses. Diagrams are drafts; source
 citations alone cannot prove correctness.
 

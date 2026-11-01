@@ -1,8 +1,15 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { youtubeId, parseCaptions, youtubeCaptions } from './youtube';
+import { youtubeId, parseCaptions, youtubeCaptions, transcriptSources } from './youtube';
 import { aiConfig } from '../ai/config';
 afterEach(() => vi.unstubAllGlobals());
 describe('permitted YouTube ingestion', () => {
+  it('retains pasted transcript timestamps and does not invent absent times', () => {
+    const sources = transcriptSources('0:01\nA client sends a request.\n1:40\nThe server replies.');
+    expect(sources.map((s) => s.start)).toEqual([1, 100]);
+    expect(sources.every((s) => s.end === null)).toBe(true);
+    expect(transcriptSources('A client sends a request.')[0].start).toBeNull();
+    expect(() => transcriptSources('1:40\nFirst.\n0:01\nSecond.')).toThrow(/increasing/);
+  });
   it('accepts public YouTube forms and rejects arbitrary hosts and private credentials', () => {
     expect(youtubeId('https://youtu.be/abcdefghijk')).toBe('abcdefghijk');
     expect(youtubeId('https://www.youtube.com/watch?v=abcdefghijk')).toBe('abcdefghijk');

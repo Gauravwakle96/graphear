@@ -175,6 +175,9 @@ export const optionsSchema = z
     questionCount: z.number().int().min(1).max(20).default(5),
     consent: z.literal(true),
     noteStyle: z.enum(['detailed', 'short', 'exam']).default('detailed'),
+    learningLevel: z.enum(['beginner', 'school', 'college', 'advanced']).optional(),
+    learningGoal: z.enum(['understand', 'exam', 'revision']).optional(),
+    visualAnalysis: z.boolean().optional(),
   })
   .strict();
 export type Source = z.infer<typeof sourceSchema>;
@@ -184,6 +187,49 @@ export type StudyNode = z.infer<typeof studyNodeSchema>;
 export type StudyOptions = z.infer<typeof optionsSchema>;
 export type StudyQuestion = z.infer<typeof questionSchema>;
 export type TutorAnswer = z.infer<typeof tutorSchema>;
+export const quizSubmissionSchema = z
+  .object({
+    answers: z.record(z.string().max(80), z.string().max(4000)),
+    mode: z.enum(['practice', 'timed']).default('practice'),
+    durationSeconds: z.number().int().min(0).max(7200).optional(),
+    timeLimitSeconds: z.number().int().min(60).max(7200).optional(),
+  })
+  .strict();
+export type StudyQuestionResult = {
+  questionId: string;
+  prompt: string;
+  kind: StudyQuestion['kind'];
+  givenAnswer: string;
+  answer: string;
+  explanation: string;
+  evidence: string[];
+  correct: boolean | null;
+};
+export function gradeStudyTest(
+  questions: StudyQuestion[],
+  answers: Record<string, string>,
+  allowUnanswered = false,
+) {
+  if (Object.keys(answers).some((id) => !questions.some((q) => q.id === id)))
+    throw new Error('Answers contain a question outside the current test');
+  if (!allowUnanswered && questions.some((q) => !answers[q.id]?.trim()))
+    throw new Error('Answer each question in the current test');
+  const results: StudyQuestionResult[] = questions.map((q) => ({
+    questionId: q.id,
+    prompt: q.prompt,
+    kind: q.kind,
+    givenAnswer: answers[q.id] ?? '',
+    answer: q.answer,
+    explanation: q.explanation,
+    evidence: q.evidence,
+    correct: ['mcq', 'truefalse'].includes(q.kind) ? answers[q.id] === q.answer : null,
+  }));
+  return {
+    results,
+    total: results.filter((r) => r.correct !== null).length,
+    correct: results.filter((r) => r.correct === true).length,
+  };
+}
 export function validateDiagram(value: unknown, sourceIds: Set<string>) {
   const d = studyDiagramSchema.parse(value);
   const nodes = new Set<string>(),

@@ -1,8 +1,22 @@
 import { describe, it, expect } from 'vitest';
-import { validateAnalysis, validateDiagram, validateTutor } from './study';
+import { validateAnalysis, validateDiagram, validateTutor, gradeStudyTest } from './study';
 import { studyMermaid, studySvg } from './study-render';
 import { testSources, testAnalysis, testDiagram } from './study.test-support';
 describe('learning data trust boundary', () => {
+  it('grades choices on the server rules and retains written-answer self-review', () => {
+    const choice = testAnalysis().questions[0];
+    const written = { ...choice, id: 'written', kind: 'short' as const, options: [] };
+    const result = gradeStudyTest([choice, written], {
+      [choice.id]: choice.answer,
+      written: 'My explanation',
+    });
+    expect(result).toMatchObject({ correct: 1, total: 1 });
+    expect(result.results[1].correct).toBeNull();
+    expect(result.results[0].explanation).toBe(choice.explanation);
+    expect(gradeStudyTest([choice], {}, true)).toMatchObject({ correct: 0, total: 1 });
+    expect(() => gradeStudyTest([choice], {})).toThrow(/each question/);
+    expect(() => gradeStudyTest([choice], { foreign: 'fake' }, true)).toThrow(/outside/);
+  });
   it('validates each supported diagram category without converting its notation', () => {
     for (const kind of [
       'flowchart',

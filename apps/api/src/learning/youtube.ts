@@ -79,6 +79,49 @@ export function parseCaptions(vtt: string): Source[] {
     );
   return sources;
 }
+export function transcriptSources(text: string): Source[] {
+  if (!text.trim() || text.length > 180000)
+    throw new Error('Transcript is empty or exceeds 180,000 characters');
+  if (text.includes('-->')) {
+    const sources = parseCaptions(text);
+    if (!sources.length) throw new Error('Transcript contains no valid caption intervals');
+    return sources;
+  }
+  const sections: { start: number | null; text: string }[] = [];
+  for (const line of text.split(/\r?\n/)) {
+    const match = line.trim().match(/^\[?(\d{1,3}:\d{2}(?::\d{2})?)\]?(?:\s+(.*))?$/);
+    if (match) {
+      const start = seconds(match[1]);
+      if (sections.at(-1)?.start != null && start < sections.at(-1)!.start!)
+        throw new Error('Transcript timestamps must be in increasing order');
+      sections.push({ start, text: match[2] ?? '' });
+    } else if (line.trim()) {
+      if (!sections.length) sections.push({ start: null, text: '' });
+      sections.at(-1)!.text += ' ' + line.trim();
+    }
+  }
+  const sources: Source[] = [];
+  for (const section of sections)
+    for (let i = 0; i < section.text.length; i += 10000) {
+      const content = section.text.slice(i, i + 10000).trim();
+      if (content)
+        sources.push({
+          id: 'text' + sources.length,
+          reference:
+            section.start == null
+              ? 'Transcript section ' + (sources.length + 1)
+              : 'At ' + timestamp(section.start),
+          kind: 'transcript',
+          text: content,
+          page: null,
+          start: section.start,
+          end: null,
+          asset: null,
+        });
+    }
+  if (sources.length > 80) throw new Error('Transcript is too long; split the lesson first');
+  return sources;
+}
 export async function youtubeMetadata(id: string, config: AIConfig) {
   const watch = `https://www.youtube.com/watch?v=${id}`;
   let title = 'YouTube learning session',

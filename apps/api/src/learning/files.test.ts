@@ -13,6 +13,7 @@ import {
   officeParts,
   inside,
   runMedia,
+  validatedText,
 } from './files';
 import { notesPdf, notesDocx, learningPackage } from './exports';
 import { testAnalysis, testSources } from '../../../../packages/core/src/study.test-support';
@@ -21,6 +22,41 @@ let dir: string, config: AIConfig;
 beforeAll(async () => {
   dir = await mkdtemp(join(tmpdir(), 'graphear-learning-test-'));
   config = { ...aiConfig(), uploadDir: dir };
+});
+describe('plain educational notes and authorized subtitles', () => {
+  it('reads UTF-8 notes and real SRT timestamps and rejects disguised binary data', async () => {
+    const note = await persistUpload(
+      Buffer.from('# Networks\nA client sends a request.'),
+      'notes.md',
+      config,
+    );
+    const extracted = await extractDocument(
+      input(note.path, note.mime),
+      config,
+      AbortSignal.timeout(1000),
+    );
+    expect(extracted.sources[0].text).toContain('client sends');
+    const subtitle = await persistUpload(
+      Buffer.from('1\n00:00:01,000 --> 00:00:05,000\nA client sends a request.\n'),
+      'lesson.srt',
+      config,
+    );
+    const captions = await extractDocument(
+      input(subtitle.path, subtitle.mime),
+      config,
+      AbortSignal.timeout(1000),
+    );
+    expect(captions.sources[0]).toMatchObject({ start: 1, end: 5, kind: 'transcript' });
+    expect(() => validatedText(new Uint8Array([0xff, 0xfe, 0xfd]))).toThrow(/UTF-8/);
+    expect(() => validatedText(Buffer.from('abc\x00def'))).toThrow(/binary/);
+    await expect(persistUpload(Buffer.from('Plain notes'), 'fake.srt', config)).rejects.toThrow(
+      /intervals/,
+    );
+    const png = await sharp({ create: { width: 10, height: 10, channels: 3, background: 'white' } })
+      .png()
+      .toBuffer();
+    await expect(persistUpload(png, 'image.txt', config)).rejects.toThrow(/extension/);
+  });
 });
 afterAll(async () => {
   if (

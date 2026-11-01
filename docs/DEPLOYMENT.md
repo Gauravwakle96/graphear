@@ -3,8 +3,9 @@
 The chosen deployment runs the complete production build and backend on the
 existing Windows laptop. Private SQLite data and uploads persist on its disk;
 Cloudflare Quick Tunnel provides a public HTTPS address without an account or
-domain. No paid service is provisioned. The current Gemini project has billing
-disabled; requests use available free quota and fail visibly when it is exhausted.
+domain. No paid service is provisioned. The current backend uses the supplied
+local FreeLLMAPI gateway and configured free upstream routes. Requests remain
+quota-limited and fail visibly when the provider cannot return validated output.
 
 **This is a temporary hackathon demo.** The laptop, network connection and tunnel
 must remain online. The public hostname changes when the tunnel restarts, and
@@ -17,10 +18,11 @@ needs an appropriate hosting account and persistent storage.
 1. Install Node 24 and FFmpeg/FFprobe. Install the project's locked dependencies
    with npm ci and prepare the OCR assets with npm run prepare:ocr.
 2. Configure the ignored backend .env without replacing existing credentials.
-   Select Gemini and a model available with free quota. Never put secrets in
-   VITE_* variables, GitHub comments or the repository. Some Gemini models
-   support GEMINI_THINKING_BUDGET=0 for lower latency; leave it blank when the
-   selected model requires thinking.
+   Follow the compatible-provider example in [AI_LEARNING.md](AI_LEARNING.md),
+   or explicitly select another account with free quota. Keep FreeLLMAPI running
+   on the same computer when its URL is localhost. Never put secrets in VITE_*
+   variables, GitHub comments or the repository. Model discovery and availability
+   booleans do not prove a generation will succeed.
 3. Install Cloudflare's official cloudflared binary. This workspace uses the
    portable Windows binary in ignored data/tools/cloudflared.exe, verified
    against the release's SHA-256 digest. For another installation set
@@ -86,11 +88,20 @@ workspace shows an approximate reset, disables generation/tutor actions and
 continues to accept source drafts and private downloads. Check availability
 refreshes configuration without consuming a generation request.
 
-The current quota update runs backend and tunnel as independent hidden processes
+The current student-workflow update runs backend and tunnel as independent hidden processes
 with file-directed logs. Its URL and owned PIDs are in the ignored deployment
 state. The first reload lost the old tunnel; guest cookies from that hostname do
 not transfer automatically. Saved database records and files were retained, and
-the original learning record was compared against its protected backup.
+the original learning record was compared against its protected backup. The
+compatible-provider deployment retained the current hostname. Public draft,
+TXT/subtitle upload, transcript attachment and mobile/desktop checks passed;
+the original saved learning record's digest was unchanged after those checks.
+
+Current demo limits are 20 MB per upload, five-minute recordings and 20 reserved
+AI calls per application day. Failed requests and corrections consume the call
+budget. These conservative demo limits differ from the larger defaults in
+`.env.example`. A quota-free gateway is not established. Live video generation
+has not yet passed; see [the release report](RELEASE_VERIFICATION.md).
 
 ## Docker on an existing host
 

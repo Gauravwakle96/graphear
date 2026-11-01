@@ -14,6 +14,17 @@ export interface AIProvider {
   generate(request: Generation): Promise<unknown>;
   transcribe(data: Uint8Array, mime: string, signal: AbortSignal): Promise<string>;
 }
+export class AIOutputValidationError extends Error {
+  constructor(
+    readonly value: unknown,
+    readonly issues: z.core.$ZodIssue[],
+    readonly generation?: Generation,
+  ) {
+    super(
+      'AI returned content outside the validated learning schema. No invalid result was rendered.',
+    );
+  }
+}
 export class AIQuotaError extends Error {
   constructor(
     readonly retryAt: number,
@@ -38,6 +49,7 @@ async function quotaError(response: Response) {
   const parsed = z
     .object({
       error: z.object({
+        retryAtMs: z.number().int().optional(),
         details: z
           .array(
             z.object({
@@ -53,13 +65,16 @@ async function quotaError(response: Response) {
   const ids = details.flatMap((d) => d.violations?.map((v) => v.quotaId) ?? []);
   const delay = details.find((d) => d.retryDelay)?.retryDelay?.match(/^([0-9.]+)s$/)?.[1];
   const header = response.headers.get('Retry-After');
+  const now = Date.now();
   const hint = delay ?? header ?? '60';
-  const seconds = Number.isFinite(Number(hint))
+  const fallbackSeconds = Number.isFinite(Number(hint))
     ? Number(hint)
-    : (Date.parse(hint) - Date.now()) / 1000;
+    : (Date.parse(hint) - now) / 1000;
+  const retryAtMs = parsed.success ? parsed.data.error.retryAtMs : undefined;
+  const seconds = retryAtMs && retryAtMs > now ? (retryAtMs - now) / 1000 : fallbackSeconds;
   const bounded = Number.isFinite(seconds) && seconds > 0 ? Math.min(seconds, 7 * 86400) : 60;
   return new AIQuotaError(
-    Date.now() + bounded * 1000,
+    now + bounded * 1000,
     ids.some((id) => /PerDay/.test(id)),
     ids.some((id) => /FreeTier/.test(id)),
   );
@@ -111,7 +126,9 @@ function structured(text: string, schema: z.ZodType) {
   } catch {
     throw new Error('AI output was not valid structured JSON. It was not rendered.');
   }
-  return schema.parse(value);
+  const result = schema.safeParse(value);
+  if (!result.success) throw new AIOutputValidationError(value, result.error.issues);
+  return result.data;
 }
 function modelSchema(schema: z.ZodType) {
   const json = z.toJSONSchema(schema, { target: 'draft-7' });
@@ -143,20 +160,36 @@ function geminiSchema(schema: z.ZodType) {
   return convert(modelSchema(schema));
 }
 export class OpenAIProvider implements AIProvider {
-  readonly name = 'openai';
-  constructor(private config: AIConfig) {}
+  readonly name: string = 'openai';
+  constructor(protected config: AIConfig) {}
+  protected endpoint(path: string) {
+    return 'https://api.openai.com/v1/' + path;
+  }
+  protected generationModel(_request: Generation) {
+    return this.config.model;
+  }
+  protected outputTokenLimit() {
+    return 12000;
+  }
+  protected generationInstructions(r: Generation) {
+    return r.instruction;
+  }
+  protected outputFormat(r: Generation): Record<string, unknown> {
+    return { type: 'json_schema', name: r.name, strict: true, schema: modelSchema(r.schema) };
+  }
   async generate(r: Generation) {
-    const response = await fetch('https://api.openai.com/v1/responses', {
+    const response = await fetch(this.endpoint('responses'), {
       method: 'POST',
+      redirect: 'error',
       headers: {
         Authorization: `Bearer ${this.config.openaiKey}`,
         'Content-Type': 'application/json',
       },
       signal: r.signal,
       body: JSON.stringify({
-        model: this.config.model,
+        model: this.generationModel(r),
         store: false,
-        instructions: r.instruction,
+        instructions: this.generationInstructions(r),
         input: [
           {
             role: 'user',
@@ -170,14 +203,9 @@ export class OpenAIProvider implements AIProvider {
             ],
           },
         ],
-        max_output_tokens: 12000,
+        max_output_tokens: this.outputTokenLimit(),
         text: {
-          format: {
-            type: 'json_schema',
-            name: r.name,
-            strict: true,
-            schema: modelSchema(r.schema),
-          },
+          format: this.outputFormat(r),
         },
       }),
     });
@@ -191,8 +219,9 @@ export class OpenAIProvider implements AIProvider {
     form.append('model', this.config.transcriptionModel);
     form.append('file', new Blob([Uint8Array.from(data)], { type: 'audio/wav' }), 'segment.wav');
     const result = await jsonResponse(
-      await fetch('https://api.openai.com/v1/audio/transcriptions', {
+      await fetch(this.endpoint('audio/transcriptions'), {
         method: 'POST',
+        redirect: 'error',
         headers: { Authorization: `Bearer ${this.config.openaiKey}` },
         body: form,
         signal,
@@ -205,6 +234,130 @@ export class OpenAIProvider implements AIProvider {
         'Transcription segment is too large. Split the source into shorter recordings.',
       );
     return result.text;
+  }
+}
+export class CompatibleProvider extends OpenAIProvider {
+  override readonly name = 'compatible';
+  constructor(config: AIConfig) {
+    super({ ...config, openaiKey: config.compatibleKey });
+  }
+  protected override endpoint(path: string) {
+    return this.config.compatibleBaseURL + '/' + path;
+  }
+  protected override generationModel(r: Generation) {
+    if (!r.images?.length) return this.config.model;
+    if (!this.config.compatibleVisionModel)
+      throw new Error(
+        'AI image analysis needs a configured vision model for this gateway. Save a draft or configure COMPATIBLE_VISION_MODEL.',
+      );
+    return this.config.compatibleVisionModel;
+  }
+  protected override outputTokenLimit() {
+    return this.config.compatibleOutputTokens;
+  }
+  protected override generationInstructions(r: Generation) {
+    const schema = modelSchema(r.schema);
+    const instructions =
+      r.instruction +
+      '\nReturn exactly one JSON object. Every array field must be an array (use [] for empty collections, never null). Keep each field at the level specified by the schema. Required top-level keys: ' +
+      JSON.stringify(schema.required ?? []) +
+      '. Every required top-level key belongs directly on the root object, never inside another property. The notes object, when present, contains only detailed, short and exam arrays. diagrams, tables, flashcards, questions, sourceObservations and warnings belong at the root beside notes.';
+    return this.config.compatibleStructuredOutput === 'json_object'
+      ? instructions +
+          '\n\nReturn one JSON object, without Markdown or commentary, matching this required JSON schema. All returned content will be validated:\n' +
+          JSON.stringify(schema)
+      : instructions;
+  }
+  protected override outputFormat(r: Generation): Record<string, unknown> {
+    return this.config.compatibleStructuredOutput === 'json_object'
+      ? { type: 'json_object' }
+      : super.outputFormat(r);
+  }
+  override async generate(r: Generation) {
+    try {
+      if (this.config.compatibleAPI === 'responses') return await super.generate(r);
+      const response = await fetch(this.endpoint('chat/completions'), {
+        method: 'POST',
+        redirect: 'error',
+        headers: {
+          Authorization: `Bearer ${this.config.compatibleKey}`,
+          'Content-Type': 'application/json',
+        },
+        signal: r.signal,
+        body: JSON.stringify({
+          model: this.generationModel(r),
+          store: false,
+          messages: [
+            { role: 'system', content: this.generationInstructions(r) },
+            {
+              role: 'user',
+              content: [
+                { type: 'text', text: r.context },
+                ...(r.images ?? []).map((i) => ({
+                  type: 'image_url',
+                  image_url: { url: `data:${i.mime};base64,${i.data}`, detail: 'auto' },
+                })),
+              ],
+            },
+          ],
+          max_completion_tokens: this.outputTokenLimit(),
+          response_format:
+            this.config.compatibleStructuredOutput === 'json_object'
+              ? { type: 'json_object' }
+              : {
+                  type: 'json_schema',
+                  json_schema: { name: r.name, strict: true, schema: modelSchema(r.schema) },
+                },
+        }),
+      });
+      const data = await jsonResponse(response);
+      const result = z
+        .object({
+          choices: z
+            .array(
+              z.object({
+                finish_reason: z.string(),
+                message: z.object({
+                  content: z.string().nullable(),
+                  refusal: z.string().nullable().optional(),
+                }),
+              }),
+            )
+            .min(1),
+        })
+        .parse(data).choices[0];
+      if (result.message.refusal) throw new Error('The AI provider declined this request');
+      if (result.finish_reason !== 'stop' || !result.message.content)
+        throw new Error(
+          'AI output was incomplete or contained no usable text. No generated result was saved.',
+        );
+      return structured(result.message.content, r.schema);
+    } catch (error) {
+      if (error instanceof AIOutputValidationError)
+        throw new AIOutputValidationError(error.value, error.issues, r);
+      if (error instanceof TypeError && !r.signal.aborted)
+        throw new Error(
+          'AI gateway is unreachable. Keep FreeLLMAPI running on the backend computer and check its configured URL.',
+          { cause: error },
+        );
+      throw error;
+    }
+  }
+  override async transcribe(data: Uint8Array, mime: string, signal: AbortSignal) {
+    if (!this.config.transcriptionModel)
+      throw new Error(
+        'AI transcription is not configured for this gateway. Supply a transcript or configure a supported transcription model.',
+      );
+    try {
+      return await super.transcribe(data, mime, signal);
+    } catch (error) {
+      if (error instanceof TypeError && !signal.aborted)
+        throw new Error(
+          'AI gateway is unreachable. Keep FreeLLMAPI running on the backend computer.',
+          { cause: error },
+        );
+      throw error;
+    }
   }
 }
 export class GeminiProvider implements AIProvider {
@@ -270,4 +423,8 @@ export class GeminiProvider implements AIProvider {
   }
 }
 export const makeProvider = (config: AIConfig): AIProvider =>
-  config.provider === 'gemini' ? new GeminiProvider(config) : new OpenAIProvider(config);
+  config.provider === 'gemini'
+    ? new GeminiProvider(config)
+    : config.provider === 'compatible'
+      ? new CompatibleProvider(config)
+      : new OpenAIProvider(config);

@@ -67,7 +67,12 @@ export async function notesPdf(
   const paragraph = (text: string, size = 11) => {
     let current = '',
       width = 0;
-    for (const word of text.replace(/\r/g, '').split(/\s+/)) {
+    // Font subsets omit the non-breaking hyphen. Plain hyphen keeps its meaning
+    // and remains unbroken because this wrapper splits only at whitespace.
+    for (const word of text
+      .replace(/\r/g, '')
+      .replace(/\u2011/g, '-')
+      .split(/\s+/)) {
       let w = 0;
       for (const char of word + ' ') w += fontFor(char).widthOfTextAtSize(char, size);
       if (width + w > 505 && current) {

@@ -1,5 +1,72 @@
 # Release and ₹0 demo verification
 
+## Current student-workflow release
+
+The 2026-11-01 student upgrade retains React/TypeScript, Express, SQLite and the
+legacy accessible diagram workspace. It adds learner preferences, secure
+TXT/Markdown/VTT/SRT uploads, saved YouTube transcript drafts, optional timed
+tests, saved answer/explanation snapshots and source-topic revision feedback.
+Failed extracted sources can explicitly retry using text while preserving
+originals and warning that figures were not inspected. Backend credentials stay
+private; production has no mock AI provider or hardcoded generated notes.
+
+The current public URL is
+https://professionals-compiler-explaining-uri.trycloudflare.com.
+The backend now uses the supplied **FreeLLMAPI compatible gateway**, with
+`gpt-oss-120b` for text, `qwen3-vl-plus` for vision and
+`whisper-large-v3-turbo` for audio. JSON mode includes the full output schema;
+Zod and source/relationship checks still reject invalid content. A single
+corrective generation counts against daily and ingestion-job limits. No official
+paid OpenAI key or paid fallback was enabled.
+
+### Current checks
+
+| Check                         | Observed result                                                                                                                                                         |
+| ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Lint/unit/API/typecheck/build | `npm run check` passed, 90 tests across nine suites                                                                                                                     |
+| Browser checks                | 23 regression tests passed; the added recovery test passed separately after fixing its duplicate navigation click; final full-suite results are in the publication's CI |
+| Production smoke/export API   | Passed; parseable PDF, DOCX, flashcard PDF and ZIP through the built server                                                                                             |
+| Dependency audit              | Zero reported vulnerabilities                                                                                                                                           |
+| Actual public boundaries      | Secure cookies, owner scope, origin/CSRF denial, private TXT/VTT upload/download, spoofed text rejection and revision conflict checks passed                            |
+| Actual public browser         | Learning controls at 390×844 and 1440×1000; no runtime exceptions or mobile overflow                                                                                    |
+| YouTube                       | URL draft and attached synthetic transcript revisions passed without generation; caption-rights-dependent URL-only generation not live-verified                         |
+| Saved data                    | Protected pre-deployment saved-session digest matched after public draft/upload checks; subsequent user-created sessions retained                                       |
+
+Current GitHub verification/container results must be read for the published
+head in [Actions](https://github.com/Gauravwakle96/graphear/actions), not inferred
+from the older successful runs below. Coverage percentages cover selected legacy
+modules. Large lazy Mermaid/ELK chunks remain; no platform load test or real-user
+learning study was performed.
+
+### Real AI results and current failures
+
+Actual compatible-provider jobs completed authorized synthetic text, raster-image
+and uploaded audio learning. Both raster labels and its directed connection were
+checked; audio-generated questions were submitted as a timed quiz through the
+real backend. Live-generated notes exported to parseable PDF/DOCX/ZIP. A separate
+real tutor response was checked. These are bounded cases, not a universal accuracy
+measurement.
+
+Video extraction, transcription and frame observations succeeded, but full
+video generation failed structural/source validation or upstream availability/
+quota. A later public text learning attempt also failed upstream. The owner's
+saved `Unit 1.pdf` has 16 extracted pages; its current AI generation failed
+upstream. A separate native-text PDF experiment with another gateway model also
+failed; the deployed model was preserved. Successful public PDF/video generation
+is not established. The key was accepted and earlier generations succeeded;
+this does not establish reliable upstream availability.
+
+The demo remains ₹0 in provisioned services and depends on the laptop, gateway,
+tunnel and internet staying online. Free routes retain quotas. YouTube needs
+permitted captions or an authorized transcript/recording. Permanent hosting,
+account recovery, representative source fidelity and blind-user validation remain
+limitations. See [the current workflow report](LEARNING_WORKFLOW_UPGRADE.md).
+
+## Historical Gemini and quota-handling release
+
+The remaining sections describe earlier runs and their then-current provider
+state. They are historical evidence, not the current gateway configuration.
+
 The complete Graphear frontend and Express backend are publicly reachable through
 a free Cloudflare Quick Tunnel on the existing Windows laptop. The launch on
 2026-11-01 includes the quota-handling update, local persistent SQLite/uploads, backend-only

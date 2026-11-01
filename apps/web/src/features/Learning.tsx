@@ -22,7 +22,8 @@ const DiagramEditor = lazy(() =>
   import('./learning/DiagramEditor').then((m) => ({ default: m.DiagramEditor })),
 );
 const activeStatuses = ['queued', 'extracting', 'generating'];
-const accept = '.png,.jpg,.jpeg,.webp,.pdf,.docx,.pptx,.mp4,.mov,.webm,.mkv,.mp3,.wav,.m4a';
+const accept =
+  '.png,.jpg,.jpeg,.webp,.pdf,.docx,.pptx,.txt,.md,.vtt,.srt,.mp4,.mov,.webm,.mkv,.mp3,.wav,.m4a';
 const errorMessage = (e: unknown) =>
   e instanceof Error ? e.message : 'This action could not be completed. Try again.';
 function Preview({ file }: { file: File | null }) {
@@ -64,21 +65,37 @@ function UploadForm({
     [text, setText] = useState(''),
     [url, setUrl] = useState(''),
     [subject, setSubject] = useState('General education'),
+    [learningLevel, setLearningLevel] = useState('college'),
+    [learningGoal, setLearningGoal] = useState('understand'),
+    [noteStyle, setNoteStyle] = useState('detailed'),
+    [difficulty, setDifficulty] = useState('medium'),
+    [questionCount, setQuestionCount] = useState(5),
     [consent, setConsent] = useState(false),
     [busy, setBusy] = useState(false),
     [progress, setProgress] = useState(0),
     [error, setError] = useState(''),
     [drag, setDrag] = useState(false);
   const input = useRef<HTMLInputElement>(null);
+  const canProcess = Boolean(
+    config?.configured &&
+    config.available !== false &&
+    (kind !== 'youtube' || config.captionsConfigured || text.trim() || file),
+  );
   function choose(f: File | undefined) {
     setError('');
     if (!f) return;
     const ext = f.name.split('.').at(-1)?.toLowerCase();
     if (!accept.split(',').includes('.' + ext)) {
-      setError('Choose PNG, JPG, WEBP, PDF, DOCX, PPTX, MP4, MOV, WEBM, MKV, MP3, WAV or M4A.');
+      setError(
+        'Choose an image, PDF, Office document, TXT/Markdown notes, subtitles, video or audio.',
+      );
       return;
     }
     const media = ['mp4', 'mov', 'webm', 'mkv', 'mp3', 'wav', 'm4a'].includes(ext ?? '');
+    if (['txt', 'md', 'vtt', 'srt'].includes(ext ?? '') && f.size > 1_000_000) {
+      setError('Text notes and transcripts are limited to 1 MB.');
+      return;
+    }
     if (f.size > (media ? (config?.limits.uploadMB ?? 100) : 20) * 1024 * 1024) {
       setError(
         media
@@ -102,9 +119,11 @@ function UploadForm({
         JSON.stringify({
           subject,
           consent,
-          difficulty: 'medium',
-          questionCount: 5,
-          noteStyle: 'detailed',
+          difficulty,
+          questionCount,
+          noteStyle,
+          learningLevel,
+          learningGoal,
         }),
       );
       form.append('process', String(process));
@@ -143,7 +162,7 @@ function UploadForm({
       <form
         onSubmit={(e) => {
           e.preventDefault();
-          void submit(Boolean(config?.configured && config.available !== false));
+          void submit(canProcess);
         }}
       >
         {kind !== 'text' && (
@@ -153,7 +172,11 @@ function UploadForm({
               id="learning-file"
               aria-label="Select learning material file"
               type="file"
-              accept={kind === 'youtube' ? '.mp4,.mov,.webm,.mkv,.mp3,.wav,.m4a' : accept}
+              accept={
+                kind === 'youtube'
+                  ? '.txt,.md,.vtt,.srt,.mp4,.mov,.webm,.mkv,.mp3,.wav,.m4a'
+                  : accept
+              }
               disabled={busy}
               onChange={(e) => choose(e.target.files?.[0])}
             />
@@ -213,8 +236,8 @@ function UploadForm({
               />
             </label>
             <p className="notice">
-              Captions require permitted official API access. If unavailable, paste a transcript or
-              attach audio/video you are authorized to process.
+              Notes need the video's actual content. When caption access is unavailable, paste its
+              transcript or attach authorized TXT/VTT/SRT or audio/video material.
             </p>
             <label>
               Transcript (optional)
@@ -227,8 +250,15 @@ function UploadForm({
               />
             </label>
             <Button type="button" onClick={() => input.current?.click()}>
-              Attach authorized recording
+              Attach transcript or recording
             </Button>
+            {!config?.captionsConfigured && !text.trim() && !file && (
+              <p className="notice" role="status">
+                Add a transcript to generate notes. Open the video on YouTube, choose “Show
+                transcript” when available, and copy its text with timestamps. You can save the link
+                as a draft while preparing the transcript.
+              </p>
+            )}
           </>
         )}
         {kind === 'text' && (
@@ -253,6 +283,68 @@ function UploadForm({
             placeholder="For example, computer networks"
           />
         </label>
+        <fieldset className="study-learning-settings" disabled={busy}>
+          <legend>Prepare this material for me</legend>
+          <label>
+            Learning level
+            <select
+              aria-label="Learning level"
+              value={learningLevel}
+              onChange={(e) => setLearningLevel(e.target.value)}
+            >
+              <option value="beginner">Beginner</option>
+              <option value="school">School</option>
+              <option value="college">College</option>
+              <option value="advanced">Advanced</option>
+            </select>
+          </label>
+          <label>
+            Study goal
+            <select
+              aria-label="Study goal"
+              value={learningGoal}
+              onChange={(e) => setLearningGoal(e.target.value)}
+            >
+              <option value="understand">Understand the concepts</option>
+              <option value="exam">Prepare for an exam</option>
+              <option value="revision">Quick revision</option>
+            </select>
+          </label>
+          <label>
+            Preferred notes
+            <select
+              aria-label="Preferred notes"
+              value={noteStyle}
+              onChange={(e) => setNoteStyle(e.target.value)}
+            >
+              <option value="detailed">Detailed explanations</option>
+              <option value="short">Short revision notes</option>
+              <option value="exam">Exam answers</option>
+            </select>
+          </label>
+          <label>
+            Quiz difficulty
+            <select
+              aria-label="Quiz difficulty"
+              value={difficulty}
+              onChange={(e) => setDifficulty(e.target.value)}
+            >
+              <option value="easy">Easy</option>
+              <option value="medium">Medium</option>
+              <option value="hard">Hard</option>
+            </select>
+          </label>
+          <label>
+            Practice questions
+            <input
+              type="number"
+              min={1}
+              max={20}
+              value={questionCount}
+              onChange={(e) => setQuestionCount(Math.max(1, Math.min(20, Number(e.target.value))))}
+            />
+          </label>
+        </fieldset>
         <label className="study-consent">
           <input
             type="checkbox"
@@ -262,12 +354,14 @@ function UploadForm({
             disabled={busy}
           />
           I’m authorized to use this material. I agree to private server storage and AI processing
-          by {config?.provider ?? 'the configured provider'}.
+          by {config?.providerLabel ?? config?.provider ?? 'the configured provider'}.
         </label>
         <p className="muted">
           Uploaded files expire after {config?.limits.retentionHours ?? 168} hours. Notes and source
-          text stay in this private guest workspace until deleted. AI requests may incur provider
-          charges.
+          text stay in this private guest workspace until deleted.{' '}
+          {config?.freeTier
+            ? 'AI processing uses the configured free allowance and remains subject to provider limits.'
+            : 'AI requests may incur provider charges.'}
         </p>
         {error && (
           <p className="error-text" role="alert">
@@ -289,11 +383,7 @@ function UploadForm({
             disabled={busy || !consent || !config || (kind === 'file' && !file)}
             icon={Upload}
           >
-            {busy
-              ? 'Uploading…'
-              : config?.configured && config.available !== false
-                ? 'Create learning session'
-                : 'Save source draft'}
+            {busy ? 'Uploading…' : canProcess ? 'Create learning session' : 'Save source draft'}
           </Button>
           {config?.configured && config.available !== false && (
             <Button
@@ -315,6 +405,7 @@ export function Learning({ onDirtyChange }: { onDirtyChange: (dirty: boolean) =>
     [session, setSession] = useState<LearningSession | null>(null),
     [tab, setTab] = useState('notes'),
     [source, setSource] = useState(''),
+    [sourceTranscript, setSourceTranscript] = useState(''),
     [diagram, setDiagram] = useState(''),
     [dirty, setDirty] = useState(false),
     [busy, setBusy] = useState(false),
@@ -414,6 +505,7 @@ export function Learning({ onDirtyChange }: { onDirtyChange: (dirty: boolean) =>
     else action();
   }
   function created(s: LearningSession) {
+    setSourceTranscript('');
     setSession(s);
     setDirty(false);
     setError('');
@@ -639,6 +731,36 @@ export function Learning({ onDirtyChange }: { onDirtyChange: (dirty: boolean) =>
         </div>
       ) : (
         <section className="study-session">
+          {session.input.kind === 'youtube' && !session.analysis && !processing && (
+            <section className="notice">
+              <h2>Add the video transcript</h2>
+              <p>
+                Paste authorized transcript text, including timestamps when available. Saving it
+                makes no AI calls.
+              </p>
+              <label>
+                Video transcript
+                <textarea
+                  rows={6}
+                  maxLength={180000}
+                  value={sourceTranscript}
+                  disabled={busy}
+                  onChange={(e) => setSourceTranscript(e.target.value)}
+                />
+              </label>
+              <Button
+                disabled={busy || !sourceTranscript.trim() || dirty}
+                onClick={() =>
+                  void action('source', {
+                    text: sourceTranscript,
+                    revision: session.revision,
+                  })
+                }
+              >
+                Save transcript
+              </Button>
+            </section>
+          )}
           <div className="study-session-heading">
             <label>
               Session name
@@ -720,10 +842,43 @@ export function Learning({ onDirtyChange }: { onDirtyChange: (dirty: boolean) =>
               <Button
                 variant="primary"
                 disabled={busy || !enabled}
-                onClick={() => void action('process').catch(() => undefined)}
+                onClick={() =>
+                  void action(
+                    'process',
+                    session.options.visualAnalysis === false
+                      ? { visualAnalysis: true, revision: session.revision }
+                      : {},
+                  ).catch(() => undefined)
+                }
               >
-                {status === 'draft' ? 'Process material' : 'Retry processing'}
+                {session.options.visualAnalysis === false
+                  ? 'Retry with image analysis'
+                  : status === 'draft'
+                    ? 'Process material'
+                    : 'Retry processing'}
               </Button>
+              {status === 'failed' &&
+                session.sources.some((src) => src.text.trim()) &&
+                session.sources.some((src) => src.asset) && (
+                  <div>
+                    <p className="muted">
+                      For notes from readable source text, you can retry without image analysis.
+                      Original figures will not be inspected; diagrams will explain the extracted
+                      text.
+                    </p>
+                    <Button
+                      disabled={busy || !enabled}
+                      onClick={() =>
+                        void action('process', {
+                          visualAnalysis: false,
+                          revision: session.revision,
+                        }).catch(() => undefined)
+                      }
+                    >
+                      Retry using extracted text
+                    </Button>
+                  </div>
+                )}
             </div>
           )}
           {ready && session.analysis && (
@@ -752,6 +907,8 @@ export function Learning({ onDirtyChange }: { onDirtyChange: (dirty: boolean) =>
               )}
               {tab === 'notes' && (
                 <NotesView
+                  key={session.id}
+                  initialStyle={session.options.noteStyle}
                   analysis={session.analysis}
                   sources={session.sources}
                   onChange={change}
@@ -822,7 +979,7 @@ export function Learning({ onDirtyChange }: { onDirtyChange: (dirty: boolean) =>
                   enabled={enabled}
                   onSource={citation}
                   onGenerate={(count, difficulty) => action('questions', { count, difficulty })}
-                  onResult={(answers) => action('quiz', { answers })}
+                  onResult={(answers, settings) => action('quiz', { answers, ...settings })}
                 />
               )}
               {tab === 'export' && (
