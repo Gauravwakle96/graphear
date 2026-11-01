@@ -28,3 +28,7 @@ SameSite cookies, CSRF header, durable rate limiting, CSP and safe text renderin
 
 Production serves the compiled web app and API from one origin. Docker includes a
 persistent /app/data volume. No paid APIs, hidden telemetry or user data in the repository.
+
+## AI Learning extension
+
+The separate consented AI Learning mode, private file processing, provider layer, endpoints, limits and known deployment/accuracy constraints are documented in [AI_LEARNING.md](AI_LEARNING.md). Legacy local imports remain on-device.

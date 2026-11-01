@@ -6,6 +6,9 @@ import { resolve } from 'node:path';
 import { z } from 'zod';
 import { parseGraph, analyzeGraph, graphSummary, createQuestions } from '@graphear/core';
 import { Store, type Project } from './store';
+import { learningRouter } from './learning/routes';
+import type { AIConfig } from './ai/config';
+import type { AIProvider } from './ai/providers';
 
 class HttpError extends Error {
   constructor(
@@ -33,7 +36,12 @@ const publicProject = (p: Project) => ({
 });
 export function createApp(
   store: Store,
-  options: { origins?: string[]; production?: boolean; serveWeb?: boolean } = {},
+  options: {
+    origins?: string[];
+    production?: boolean;
+    serveWeb?: boolean;
+    learning?: { config: AIConfig; provider?: AIProvider };
+  } = {},
 ) {
   const app = express();
   app.disable('x-powered-by');
@@ -61,6 +69,7 @@ export function createApp(
           objectSrc: ["'none'"],
           baseUri: ["'self'"],
           frameAncestors: ["'none'"],
+          frameSrc: ["'self'", 'https://www.youtube-nocookie.com'],
           upgradeInsecureRequests: production ? [] : null,
         },
       },
@@ -82,7 +91,7 @@ export function createApp(
       if (!origin || !origins.has(origin))
         return res.status(403).json({ error: 'This website cannot access the workspace.' });
       res.setHeader('Access-Control-Allow-Headers', 'Content-Type,X-CSRF-Token');
-      res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
+      res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
       return res.sendStatus(204);
     }
     next();
@@ -223,6 +232,14 @@ export function createApp(
       questions: createQuestions(graph),
     });
   });
+  const learning = learningRouter(
+    store,
+    session,
+    options.learning?.config,
+    options.learning?.provider,
+  );
+  app.locals.learning = learning.service;
+  app.use('/api/learning', learning.router);
   app.use('/api', (_req, _res, next) => next(new HttpError(404, 'API endpoint not found.')));
   if (options.serveWeb) {
     const web = resolve('dist/web');

@@ -3,7 +3,7 @@
 Read PRODUCT.md, DESIGN.md and docs/ARCHITECTURE.md before changing product scope or UI.
 
 - Preserve source uncertainty. Raster OCR creates text regions/geometric proposals; never label it verified arrow recognition.
-- Keep original image pixels in the browser. Server graphs contain text/geometry and require explicit save/share.
+- Keep original image pixels in the browser in legacy local mode. The separately consented AI Learning mode may upload private material and send selected content to the configured backend AI provider. Never silently convert local imports into AI uploads. Server graphs require explicit save/share.
 - Implement every essential action with keyboard-accessible native controls. Retain optional narration, visible focus, both themes and reduced motion.
 - Keep graph rules in packages/core, client infrastructure in apps/web/src/lib, persistence/security in apps/api. Validate all imported/server graph data.
 - Owner-scope private records, use parameterized SQL, check origins and CSRF for mutations, escape exported text and retain bounded upload/request limits.

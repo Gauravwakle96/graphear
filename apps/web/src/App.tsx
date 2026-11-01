@@ -1,6 +1,7 @@
-import { useState, useRef, useEffect, useMemo } from 'react';
+import { useState, useRef, useEffect, useMemo, lazy, Suspense } from 'react';
 import {
   GitBranch,
+  FileText,
   FolderOpen,
   GraduationCap,
   HelpCircle,
@@ -53,6 +54,8 @@ import { saveRemote, publishRemote, revokeRemote, getShared } from './lib/api';
 import { learningPack } from './lib/export';
 import { graphSvg } from './lib/svg';
 
+const Learning = lazy(() => import('./features/Learning').then((m) => ({ default: m.Learning })));
+
 type Saved = {
   storage: 'device' | 'workspace';
   id: string;
@@ -81,6 +84,8 @@ export default function App() {
     [undo, setUndo] = useState<Graph[]>([]),
     [redo, setRedo] = useState<Graph[]>([]),
     [dirty, setDirty] = useState(false),
+    [learningDirty, setLearningDirty] = useState(false),
+    [leaveLearning, setLeaveLearning] = useState<string | null>(null),
     [saved, setSaved] = useState<Saved | undefined>(),
     [image, setImage] = useState<string | undefined>('/examples/scholarship.svg'),
     [notes, setNotes] = useState<string[]>([]),
@@ -113,10 +118,16 @@ export default function App() {
   const differences = useMemo(() => diffGraphs(baseline, graph), [baseline, graph]);
   const readonly = page.startsWith('share/');
   useEffect(() => {
-    const update = () => setPage(pageFromHash());
+    const update = () => {
+      const next = pageFromHash();
+      if (page === 'learning' && learningDirty && next !== 'learning') {
+        window.history.replaceState(null, '', '#learning');
+        setLeaveLearning(next);
+      } else setPage(next);
+    };
     window.addEventListener('hashchange', update);
     return () => window.removeEventListener('hashchange', update);
-  }, []);
+  }, [page, learningDirty]);
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
     try {
@@ -159,6 +170,10 @@ export default function App() {
       .finally(() => setSharedLoading(false));
   }, [page]);
   const navigate = (next: string) => {
+    if (page === 'learning' && learningDirty && next !== 'learning') {
+      setLeaveLearning(next);
+      return;
+    }
     window.location.hash = next;
     setPage(next);
   };
@@ -367,6 +382,7 @@ export default function App() {
   ]);
   const nav = [
     { id: 'workspace', label: 'Workspace', icon: GitBranch },
+    { id: 'learning', label: 'Learning', icon: FileText },
     { id: 'library', label: 'Library', icon: FolderOpen },
     { id: 'practice', label: 'Practice', icon: GraduationCap },
     { id: 'guide', label: 'Guide', icon: HelpCircle },
@@ -425,7 +441,11 @@ export default function App() {
         ))}
       </nav>
       <main id="main-content" className="main-content" tabIndex={-1}>
-        {page === 'library' ? (
+        {page === 'learning' ? (
+          <Suspense fallback={<p role="status">Opening learning studio…</p>}>
+            <Learning onDirtyChange={setLearningDirty} />
+          </Suspense>
+        ) : page === 'library' ? (
           <Library
             onOpen={(g, s) => load(g, s)}
             onNew={() => load(createBlankGraph(), undefined, undefined, [], 'edit')}
@@ -765,12 +785,16 @@ export default function App() {
           if (file) void handleImport(file, true);
         }}
       />
-      <div className="sr-only" role="status" aria-live="polite" aria-atomic="true">
-        {describeNode(graph, selectedId)}
-      </div>
-      <div className="sr-only" aria-live="polite">
-        {graphSummary(graph)}
-      </div>
+      {page !== 'learning' && (
+        <>
+          <div className="sr-only" role="status" aria-live="polite" aria-atomic="true">
+            {describeNode(graph, selectedId)}
+          </div>
+          <div className="sr-only" aria-live="polite">
+            {graphSummary(graph)}
+          </div>
+        </>
+      )}
       {message && (
         <div className="toast" role="status">
           <span>{message}</span>
@@ -933,6 +957,33 @@ export default function App() {
               Revoke link
             </Button>
           )}
+        </div>
+      </Dialog>
+      <Dialog
+        open={leaveLearning !== null}
+        title="Leave without saving?"
+        onClose={() => setLeaveLearning(null)}
+      >
+        <p>
+          Your learning notes or diagrams have unsaved edits. Keep editing to save them, or leave
+          and discard those edits.
+        </p>
+        <div className="dialog-actions">
+          <Button onClick={() => setLeaveLearning(null)}>Keep editing</Button>
+          <Button
+            variant="danger"
+            onClick={() => {
+              const next = leaveLearning;
+              setLeaveLearning(null);
+              setLearningDirty(false);
+              if (next !== null) {
+                window.history.pushState(null, '', '#' + next);
+                setPage(next);
+              }
+            }}
+          >
+            Discard edits and leave
+          </Button>
         </div>
       </Dialog>
       <Dialog open={!!discard} title="Open another diagram?" onClose={() => setDiscard(null)}>

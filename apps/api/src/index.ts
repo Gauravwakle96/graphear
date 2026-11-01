@@ -17,11 +17,13 @@ const app = createApp(store, {
 const server = app.listen(port, process.env.HOST ?? '127.0.0.1', () =>
   console.log(`Graphear API listening on port ${port}`),
 );
+app.locals.learning.start();
 let closing = false;
 const close = () => {
   if (closing) return;
   closing = true;
-  server.close(() => {
+  server.close(async () => {
+    await app.locals.learning.stop();
     store.close();
     process.exitCode = 0;
   });

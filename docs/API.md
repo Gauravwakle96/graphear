@@ -21,3 +21,7 @@ Session creation requires an exact allowlisted `Origin`. Other mutations require
 Graph data is validated with the strict shared schema. At most 100 nodes, 250 edges, 4096×4096 geometry, 250 characters per node label, 100 per connection label. IDs must be unique and references/bounds valid. Body limit is 1 MB; 50 projects per workspace; 240 API requests per minute per socket IP.
 
 Errors are `{error: string}`. Common statuses: 400 malformed graph/JSON, 401 no session, 403 origin/CSRF, 404 missing/unowned/revoked, 409 stale write, 413 body too large, 422 workspace capacity/unconfirmed sharing, 429 request quota, 500 generic internal failure. Database errors and session values are not returned.
+
+## AI Learning extension
+
+The separate consented AI Learning mode, private file processing, provider layer, endpoints, limits and known deployment/accuracy constraints are documented in [AI_LEARNING.md](AI_LEARNING.md). Legacy local imports remain on-device.

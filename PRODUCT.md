@@ -19,7 +19,7 @@ the complete keyboard and structured text interaction.
 
 ## Product Purpose
 
-Import, verify, explore, edit, compare and learn from flowcharts independently.
+Import, verify, explore, edit, compare and learn from flowcharts independently. The separate AI Learning area lets students process authorized educational files/text into source-linked notes, typed diagrams, tutoring and revision workspaces.
 Success means correct bounded graph reasoning and usable accessible workflows.
 
 ## Positioning
@@ -56,7 +56,7 @@ Authored diagrams and missions are synthetic examples, visibly labelled as such.
 ## Product Principles
 
 Preserve uncertainty until review. Explain graph facts with source references.
-Offer equivalent keyboard actions. Keep original documents local. Report actual tests.
+Offer equivalent keyboard actions. Keep legacy imports local; obtain explicit consent for private AI uploads. Report actual tests.
 
 ## Accessibility & Inclusion
 

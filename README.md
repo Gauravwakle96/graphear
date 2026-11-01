@@ -4,6 +4,12 @@
 
 Graphear joins source review, keyboard exploration, editable graph structure, version comparison and graph-grounded exercises. It is a working hackathon prototype. Its examples are synthetic; accessibility with actual blind users and OCR accuracy have not been established through a user study.
 
+## AI learning upgrade
+
+The **Learning** area adds private multimodal uploads, actual configurable OpenAI/Gemini adapters, source-linked notes and diagrams, tutoring, revision practice and exports alongside the existing local workspace. A backend API key is required for AI processing; none is configured by default. Live AI accuracy has not yet been verified.
+
+See [setup and architecture](docs/AI_LEARNING.md), [evaluation](docs/LEARNING_EVALUATION.md) and [implementation report](docs/AI_IMPLEMENTATION_REPORT.md).
+
 ## What works
 
 - Import PNG/JPEG, plain SVG and validated Graphear JSON. English OCR runs in the browser with self-hosted Tesseract assets.
@@ -20,7 +26,7 @@ Raster OCR identifies text and makes **geometric connection suggestions**. It do
 
 ## Run locally
 
-Requires **Node.js 24+**, npm and Git. No paid API or API key is required. Initial package/OCR downloads require internet access.
+Requires **Node.js 24+**, npm and Git. Legacy local mode needs no paid API or API key. AI Learning mode requires a backend provider key; media inputs also require FFmpeg/FFprobe. Initial package/OCR downloads require internet access.
 
 ```sh
 git clone https://github.com/Gauravwakle96/graphear.git
@@ -78,7 +84,7 @@ tests/          Playwright browser and accessibility checks
 docs/           Architecture, API, security, demo and verification
 ```
 
-Private workspace access uses a 30-day guest session cookie, with no email/password recovery. Clearing cookies or expiry removes access to that session's diagrams; keep JSON backups. This is a deliberate prototype scope choice, not a multi-tenant enterprise account system. Original image pixels are held only in the browser import session; server graphs still contain potentially sensitive **text and geometry**. Anyone holding a share link can read its snapshot.
+Private workspace access uses a 30-day guest session cookie, with no email/password recovery. Clearing cookies or expiry removes access to that session's diagrams; keep JSON backups. This is a deliberate prototype scope choice, not a multi-tenant enterprise account system. In legacy local mode, original image pixels are held only in the browser import session. AI Learning mode explicitly uploads private material and sends selected content to the configured provider with consent; server graphs still contain potentially sensitive **text and geometry**. Anyone holding a share link can read its snapshot.
 
 See [architecture](docs/ARCHITECTURE.md), [API](docs/API.md), [security](docs/SECURITY.md), [demo script](docs/DEMO.md) and [verification](docs/VERIFICATION.md).
 
