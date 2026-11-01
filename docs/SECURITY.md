@@ -15,3 +15,7 @@ Guest sessions expire after 30 days without recovery. Expired session project da
 Learning checks establish properties of the graph, not correctness of the original diagram. Confirmed review is a user's assertion, not a guarantee. Independent source imports may use different IDs, affecting version matching.
 
 Implementation guidance includes the official [OWASP CSRF prevention cheat sheet](https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html). The API uses a server-generated synchronizer token per session, checked alongside Origin and SameSite cookies. These layers do not replace XSS prevention.
+
+## AI Learning extension
+
+The separate consented AI Learning mode, private file processing, provider layer, endpoints, limits and known deployment/accuracy constraints are documented in [AI_LEARNING.md](AI_LEARNING.md). Legacy local imports remain on-device.

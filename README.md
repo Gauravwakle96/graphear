@@ -4,6 +4,14 @@
 
 Graphear joins source review, keyboard exploration, editable graph structure, version comparison and graph-grounded exercises. It is a working hackathon prototype. Its examples are synthetic; accessibility with actual blind users and OCR accuracy have not been established through a user study.
 
+## AI learning upgrade
+
+The **Learning** studio adds private multimodal uploads, real configurable AI providers, source-linked notes, typed diagrams, tutoring, quizzes, timed tests and exports. Choose diagram detail, point-based notes and custom instructions; review AI diagram proposals before explicitly saving them. Study and application-process checklists retain progress on your device. The supplied NoteGPT reference informs its converter and library layout while preserving Graphear's accessible workspace.
+
+A backend API key is required; none ships with the repository. The current free demo uses Gemini. Actual PDF/text generation is verified in bounded cases; representative educational accuracy remains subject to source review.
+
+See [setup and architecture](docs/AI_LEARNING.md), [the new workspace workflow](docs/AI_WORKSPACE_UPGRADE.md), [evaluation](docs/LEARNING_EVALUATION.md) and [implementation report](docs/AI_IMPLEMENTATION_REPORT.md).
+
 ## What works
 
 - Import PNG/JPEG, plain SVG and validated Graphear JSON. English OCR runs in the browser with self-hosted Tesseract assets.
@@ -20,7 +28,7 @@ Raster OCR identifies text and makes **geometric connection suggestions**. It do
 
 ## Run locally
 
-Requires **Node.js 24+**, npm and Git. No paid API or API key is required. Initial package/OCR downloads require internet access.
+Requires **Node.js 24+**, npm and Git. Legacy local mode needs no paid API or API key. AI Learning mode requires a backend provider key; media inputs also require FFmpeg/FFprobe. Initial package/OCR downloads require internet access.
 
 ```sh
 git clone https://github.com/Gauravwakle96/graphear.git
@@ -59,9 +67,9 @@ npm run build
 npm start
 ```
 
-The Express process serves `dist/web` and `/api` on the same origin. Use a persistent SQLite volume and HTTPS reverse proxy for public deployment. Set `NODE_ENV=production`, `HOST=0.0.0.0` inside a container, and `ALLOWED_ORIGINS` to the exact public URL. Production session cookies are Secure. The server does not trust arbitrary proxy headers; rate limiting uses the socket address, so a reverse proxy shares a conservative IP quota unless carefully configured in code.
+The Express process serves `dist/web` and `/api` on the same origin. Use a persistent SQLite volume and HTTPS reverse proxy for public deployment. Set `NODE_ENV=production`, `HOST=0.0.0.0` inside a container, and `APP_PUBLIC_URL` or `ALLOWED_ORIGINS` to the exact public URL. Render's `RENDER_EXTERNAL_URL` is supported. Production session cookies are Secure. Proxy trust remains disabled by default; `PROXY_TRUST_HOPS=1` requires a verified single reverse proxy with no direct public access to the origin.
 
-`docker compose up --build` supplies a single service and persistent volume. Override `ALLOWED_ORIGINS` for your domain. Docker packaging is provided; consult the verification report to see whether a Docker build was actually run.
+`docker compose up --build` supplies a single service, runtime AI secrets from the ignored `.env`, and a persistent volume. The ₹0 HTTPS demo, release and backup instructions are in [deployment](docs/DEPLOYMENT.md). Consult the verification report for actual container and hosted verification results.
 
 No public deployment is provisioned automatically. The production service requires a long-lived Node host with writable storage; static-only hosting can serve the frontend but cannot provide the private workspace API. A backend outage leaves local saves and exports usable.
 
@@ -78,7 +86,7 @@ tests/          Playwright browser and accessibility checks
 docs/           Architecture, API, security, demo and verification
 ```
 
-Private workspace access uses a 30-day guest session cookie, with no email/password recovery. Clearing cookies or expiry removes access to that session's diagrams; keep JSON backups. This is a deliberate prototype scope choice, not a multi-tenant enterprise account system. Original image pixels are held only in the browser import session; server graphs still contain potentially sensitive **text and geometry**. Anyone holding a share link can read its snapshot.
+Private workspace access uses a 30-day guest session cookie, with no email/password recovery. Clearing cookies or expiry removes access to that session's diagrams; keep JSON backups. This is a deliberate prototype scope choice, not a multi-tenant enterprise account system. In legacy local mode, original image pixels are held only in the browser import session. AI Learning mode explicitly uploads private material and sends selected content to the configured provider with consent; server graphs still contain potentially sensitive **text and geometry**. Anyone holding a share link can read its snapshot.
 
 See [architecture](docs/ARCHITECTURE.md), [API](docs/API.md), [security](docs/SECURITY.md), [demo script](docs/DEMO.md) and [verification](docs/VERIFICATION.md).
 

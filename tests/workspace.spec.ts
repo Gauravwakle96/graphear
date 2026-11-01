@@ -167,11 +167,65 @@ test('real raster OCR yields a reviewable draft without uploading image pixels',
       mimeType: 'image/png',
       buffer: Buffer.from(image, 'base64'),
     });
+  await expect(page.getByRole('dialog', { name: 'Reconstruct this image' })).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: 'Reconstruct with AI', exact: true }),
+  ).toBeVisible();
+  expect(apiMutations).toEqual([]);
+  await page.getByRole('button', { name: 'Extract text locally', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Check the source' })).toBeVisible({
     timeout: 90_000,
   });
-  await expect(page.getByText(/geometric suggestions, not verified arrow/)).toBeVisible();
+  await expect(page.getByText(/Local OCR extracted text only; no arrows/)).toBeVisible();
+  await expect(
+    page.getByRole('heading', { name: 'Original image and extracted text' }),
+  ).toBeVisible();
+  await expect(page.locator('.graph-edge')).toHaveCount(0);
   expect(apiMutations).toEqual([]);
+  let uploads = 0;
+  page.on('request', (r) => {
+    if (r.url().endsWith('/api/learning') && r.method() === 'POST') uploads++;
+  });
+  await page.getByRole('button', { name: 'Open AI reconstruction', exact: true }).click();
+  await expect(page.getByText('Your original image is ready.', { exact: false })).toBeVisible();
+  await page.getByLabel('Diagram format', { exact: true }).selectOption('network');
+  await page.getByLabel('Diagram detail', { exact: true }).selectOption('simple');
+  await page
+    .getByLabel('Tell the AI what you need', { exact: true })
+    .fill('Keep every layer and label in order');
+  await expect(page.getByLabel(/I’m authorized/)).not.toBeChecked();
+  expect(uploads).toBe(0);
+});
+
+test('image import sends the original to the AI form only after an explicit choice', async ({
+  page,
+}) => {
+  const image = await page.evaluate(() => {
+    const c = document.createElement('canvas');
+    c.width = 1600;
+    c.height = 1000;
+    return c.toDataURL('image/png').split(',')[1];
+  });
+  let uploads = 0,
+    ocrDownloads = 0;
+  page.on('request', (r) => {
+    if (r.method() === 'POST' && r.url().endsWith('/api/learning')) uploads++;
+    if (r.url().includes('/ocr/')) ocrDownloads++;
+  });
+  await page.getByLabel('Import diagram file', { exact: true }).setInputFiles({
+    name: 'original-source.png',
+    mimeType: 'image/png',
+    buffer: Buffer.from(image, 'base64'),
+  });
+  await page.getByRole('button', { name: 'Reconstruct with AI', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'What are you learning today?' })).toBeVisible();
+  await expect(page.getByLabel(/I’m authorized/)).not.toBeChecked();
+  const preview = page.locator('.study-upload-preview img');
+  await expect
+    .poll(() => preview.evaluate((img) => (img as HTMLImageElement).naturalWidth))
+    .toBe(1600);
+  expect(uploads).toBe(0);
+  expect(ocrDownloads).toBe(0);
 });
 test('rejects invalid graph references and exports a portable learning pack', async ({ page }) => {
   const bad = { ...scholarshipGraph, edges: [{ ...scholarshipGraph.edges[0], target: 'missing' }] };

@@ -10,6 +10,7 @@ RUN npm run prepare:ocr && npm run build && npm prune --omit=dev
 
 FROM node:24-bookworm-slim
 WORKDIR /app
+RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg && rm -rf /var/lib/apt/lists/*
 ENV NODE_ENV=production HOST=0.0.0.0 PORT=3001 DATABASE_PATH=/app/data/graphear.sqlite
 COPY --from=build /app/dist ./dist
 COPY --from=build /app/node_modules ./node_modules

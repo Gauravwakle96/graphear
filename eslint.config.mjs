@@ -36,6 +36,7 @@ export default ts.config(
         clearTimeout: 'readonly',
         SpeechSynthesisUtterance: 'readonly',
         AbortController: 'readonly',
+        AbortSignal: 'readonly',
         HTMLElement: 'readonly',
         SVGElement: 'readonly',
         HTMLInputElement: 'readonly',

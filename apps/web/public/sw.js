@@ -1,4 +1,4 @@
-const CACHE = 'graphear-v1';
+const CACHE = 'graphear-v2';
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches

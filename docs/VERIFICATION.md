@@ -1,5 +1,59 @@
 # Verification report
 
+## AI learning upgrade — 2026-11-01
+
+Actual OpenAI and Gemini adapters are implemented. No provider credentials were
+configured, so live generation/transcription and subject-level source fidelity
+were **not verified**. Provider-contract and completed-workspace tests explicitly
+use synthetic responses. See [the implementation report](AI_IMPLEMENTATION_REPORT.md)
+and [live evaluation procedure](LEARNING_EVALUATION.md).
+
+| Check                         | Actual result                                                                                                                                                                                              |
+| ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `npm run check`               | Passed: lint, 68 unit/API tests across 8 suites, typecheck and production build                                                                                                                            |
+| Coverage                      | 91.59% lines in the unchanged original-core/API coverage filter; new AI modules and frontend are not included in that number                                                                               |
+| `npm run test:e2e`            | 20 passed: 13 original flows plus 7 Learning tests                                                                                                                                                         |
+| Input extraction              | Real PDF pages/text, DOCX/PPTX text, WAV chunks, video frames and a real scene transition at approximately 3 seconds; synthetic transcription is explicitly test-only                                      |
+| Export files                  | Parseable PDF, DOCX, ZIP, SVG and PNG produced and inspected by tests                                                                                                                                      |
+| Learning security             | Authentication, origin/consent checks, cross-owner reads/writes/exports/deletes, stale revisions and invalid evidence rejected                                                                             |
+| Media lifecycle               | Cancellation and subprocess timeouts tested; failure returns after child close                                                                                                                             |
+| Browser boundaries            | Unsaved edits survive navigation/footer/hash changes; citations focus source headings; seekable audio fixture opens at 1.25 seconds and switches to 4.5 seconds                                            |
+| Typography                    | Actual self-hosted Manrope availability and SVG text metrics verified against Arial; sanitized inline notation retains readable labels                                                                     |
+| Learning accessibility        | Zero axe violations in tested upload states at 1440/820/390 widths, both themes, and fixture source view; no real-user or full screen-reader certification                                                 |
+| Production smoke              | Passed on latest built server: headers/CSP, secure cookie flags, sharing, offline navigation, private Learning draft create/delete without AI calls, real local OCR, no cached API data/runtime exceptions |
+| `npm audit` and runtime audit | Zero reported vulnerabilities at verification time                                                                                                                                                         |
+
+The first media-seeking fixture lacked HTTP range responses. It was corrected to
+serve seekable 206 downloads, matching Express `sendFile`; the initial cited time
+and later source selection then passed. An initial theme-capture review requested
+settled recaptures; invalid evidence was replaced. The visual reviewer identified
+four bounded fixes: unsaved navigation, source focus, initial media seek and
+notation font availability. Its final **ship** verdict scored all four fixes
+resolved; that verdict covers the fix list, not universal usability or AI accuracy.
+`npm run format:check` passed. The ordinary-extension design handoff preserves
+the incumbent DESIGN.md and design-token sidecar.
+
+The documenter compared 12 Learning captures and incumbent views against the
+existing tokens and shared controls, confirming that the extension preserves the
+identity. Both design-file hashes remained unchanged. It reported existing compact
+caption/unused SVG-label drift without changing it. Staged whitespace and common
+credential/private-artifact scans passed; no credentials or private assets were
+staged.
+
+Implementation [94209a7](https://github.com/Gauravwakle96/graphear/commit/94209a79c9ddd11756015cf68c4dfe6a229f4d64)
+was pushed to [feat/ai-learning-platform](https://github.com/Gauravwakle96/graphear/tree/feat/ai-learning-platform).
+Native `git ls-remote` confirmed that implementation commit on the remote branch.
+The delivery documentation is committed separately. This does not establish a
+remote CI pass or hosted deployment.
+
+Large lazy Mermaid/ELK chunks still produce a build-size warning; no new-platform
+performance or load-test result is claimed. Live evaluation, Docker/container
+build, hosted deployment, external penetration test, remote CI and blind-user
+testing remain unverified. YouTube caption access requires appropriate official
+permissions; no restricted downloader is included.
+
+## Original accessible diagram application — baseline evidence
+
 Verified locally on Windows with Node 24.14.1, npm 11.11.0 and Chrome. These are engineering checks of this prototype, not a hackathon judging score or a user-study result.
 
 | Check                                | Actual result                                                                                                                                                                             |

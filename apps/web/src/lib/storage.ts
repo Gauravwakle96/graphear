@@ -61,8 +61,10 @@ export async function deleteLocal(id: string) {
     };
   });
 }
-export function download(name: string, content: string, type = 'application/json') {
-  const url = URL.createObjectURL(new Blob([content], { type }));
+export function download(name: string, content: string | Blob, type = 'application/json') {
+  const url = URL.createObjectURL(
+    content instanceof Blob ? content : new Blob([content], { type }),
+  );
   const anchor = document.createElement('a');
   anchor.href = url;
   anchor.download = name;

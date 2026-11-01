@@ -13,6 +13,7 @@
     "dev:api": "tsx watch apps/api/src/index.ts",
     "build": "npm run typecheck && node scripts/build.mjs",
     "start": "node dist/server.mjs",
+    "serve:free": "node scripts/serve-free.mjs",
     "typecheck": "tsc --noEmit",
     "lint": "eslint apps packages scripts tests --max-warnings 0",
     "test": "vitest run",
@@ -24,7 +25,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "examples": "tsx scripts/examples.ts",
-    "test:smoke": "node scripts/smoke.mjs"
+    "test:smoke": "node scripts/smoke.mjs",
+    "test:exports": "tsx scripts/export-smoke.ts"
   },
   "dependencies": {
     "zod": "4.6.7"
@@ -33,7 +35,9 @@
     "@axe-core/playwright": "4.14.0",
     "@eslint/js": "^10.0.1",
     "@playwright/test": "1.64.1",
+    "@types/dompurify": "^3.0.5",
     "@types/express": "5.0.6",
+    "@types/multer": "^2.3.0",
     "@types/node": "^24.10.0",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",

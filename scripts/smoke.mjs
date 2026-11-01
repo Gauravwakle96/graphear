@@ -12,6 +12,15 @@ const child = spawn(process.execPath, ['dist/server.mjs'], {
     NODE_ENV: 'production',
     DATABASE_PATH: 'data/smoke.sqlite',
     ALLOWED_ORIGINS: origin,
+    GRAPHEAR_LOAD_ENV: '0',
+    APP_PUBLIC_URL: '',
+    RENDER_EXTERNAL_URL: '',
+    OPENAI_API_KEY: '',
+    GEMINI_API_KEY: '',
+    YOUTUBE_API_KEY: '',
+    YOUTUBE_OAUTH_TOKEN: '',
+    AI_PROVIDER: 'openai',
+    PROXY_TRUST_HOPS: '0',
   },
 });
 let browser;
@@ -90,6 +99,29 @@ try {
   });
   assert.deepEqual(cachedApi, [], 'Private API responses must never be cached');
   await context.setOffline(false);
+  await page.getByRole('link', { name: 'Learning', exact: true }).click();
+  await page.getByRole('heading', { name: 'What are you learning today?' }).waitFor();
+  const learningConfigured = await page.evaluate(async () => {
+    const response = await fetch('/api/learning/config');
+    if (!response.ok) throw new Error('Learning configuration unavailable');
+    return (await response.json()).configured;
+  });
+  await page.getByRole('button', { name: 'Paste text', exact: true }).click();
+  await page
+    .getByLabel('Educational content', { exact: true })
+    .fill('Production smoke source: a client sends a request to a server.');
+  await page.getByLabel(/I’m authorized/).check();
+  await page
+    .getByRole('button', {
+      name: learningConfigured ? 'Save draft only' : 'Save source draft',
+      exact: true,
+    })
+    .click();
+  await page.getByRole('heading', { name: 'Your source is saved' }).waitFor();
+  await page.getByRole('button', { name: 'Delete session', exact: true }).click();
+  await page.getByRole('button', { name: 'Delete permanently', exact: true }).click();
+  await page.getByRole('heading', { name: 'Learning studio', exact: true }).waitFor();
+  await page.getByRole('link', { name: 'Workspace', exact: true }).click();
   const raster = await page.evaluate(() => {
     const canvas = document.createElement('canvas');
     canvas.width = 800;
@@ -111,13 +143,14 @@ try {
       mimeType: 'image/png',
       buffer: Buffer.from(raster, 'base64'),
     });
+  await page.getByRole('button', { name: 'Extract text locally', exact: true }).click();
   await page
     .getByRole('heading', { name: 'Check the source', exact: true })
     .waitFor({ timeout: 60_000 });
-  await page.getByText(/geometric suggestions, not verified arrow/).waitFor();
+  await page.getByText(/Local OCR extracted text only; no arrows/).waitFor();
   assert.deepEqual(errors, [], 'No runtime exceptions');
   console.log(
-    'PASS production: static frontend, CSP/headers, Secure HttpOnly SameSite cookie, share creation, offline reload/navigation, real raster OCR under CSP, no cached API or runtime exceptions.',
+    'PASS production: static frontend, CSP/headers, Secure HttpOnly SameSite cookie, share creation, offline reload/navigation, private Learning draft creation/deletion without AI calls, real raster OCR under CSP, no cached API or runtime exceptions.',
   );
 } finally {
   if (browser) await browser.close();

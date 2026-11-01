@@ -23,11 +23,13 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
     ...init,
     credentials: 'same-origin',
     headers: {
-      ...(init.body ? { 'Content-Type': 'application/json' } : {}),
+      ...(init.body && !(init.body instanceof FormData)
+        ? { 'Content-Type': 'application/json' }
+        : {}),
       ...(init.method && init.method !== 'GET' ? { 'X-CSRF-Token': csrfToken } : {}),
       ...init.headers,
     },
-    signal: AbortSignal.timeout(12_000),
+    signal: init.signal ?? AbortSignal.timeout(12_000),
   });
   if (!response.ok) {
     const body = (await response.json().catch(() => ({
@@ -86,3 +88,6 @@ export async function getShared(token: string) {
   );
   return { ...result, graph: parseGraph(result.graph) };
 }
+
+export { request as apiRequest };
+export const workspaceHeaders = () => ({ 'X-CSRF-Token': csrfToken });

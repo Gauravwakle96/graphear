@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Check, Image as ImageIcon, Pencil, ShieldCheck, ZoomIn } from 'lucide-react';
+import { Check, Image as ImageIcon, Pencil, ShieldCheck, ZoomIn, Sparkles } from 'lucide-react';
 import { analyzeGraph, type Graph } from '@graphear/core';
 import { Button, Dialog } from '../components/ui';
 export function Review({
@@ -10,6 +10,7 @@ export function Review({
   onSelect,
   onCommit,
   onEdit,
+  onAI,
 }: {
   graph: Graph;
   image?: string;
@@ -18,6 +19,7 @@ export function Review({
   onSelect: (id: string) => void;
   onCommit: (g: Graph) => void;
   onEdit: () => void;
+  onAI?: () => void;
 }) {
   const [checked, setChecked] = useState(false);
   const [inspectOpen, setInspectOpen] = useState(false);
@@ -37,6 +39,18 @@ export function Review({
           {note}
         </p>
       ))}
+      {onAI && (
+        <div className="notice">
+          <strong>Reconstruct the original with AI</strong>
+          <p>
+            Choose an accurate diagram, simplified graph or custom explanation. Review upload
+            consent in Learning before any material leaves this device.
+          </p>
+          <Button icon={Sparkles} onClick={onAI}>
+            Open AI reconstruction
+          </Button>
+        </div>
+      )}
       {image ? (
         <>
           <div className="source-preview">
