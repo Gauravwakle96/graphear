@@ -1,0 +1,808 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-01T08:18:04.544Z",
+  "title": "Design System: Graphear",
+  "extensions": {
+    "colorMeta": {
+      "ground": {
+        "role": "neutral",
+        "displayName": "Working Ground",
+        "tonalRamp": [
+          "oklch(15% 0.0016 128.5)",
+          "oklch(26% 0.0034 128.5)",
+          "oklch(38% 0.0054 128.5)",
+          "oklch(50% 0.0057 128.5)",
+          "oklch(62% 0.0057 128.5)",
+          "oklch(74% 0.0057 128.5)",
+          "oklch(86% 0.0032 128.5)",
+          "oklch(95% 0.0011 128.5)"
+        ]
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "Working Surface",
+        "tonalRamp": [
+          "oklch(15% 0.0000 89.9)",
+          "oklch(26% 0.0000 89.9)",
+          "oklch(38% 0.0000 89.9)",
+          "oklch(50% 0.0000 89.9)",
+          "oklch(62% 0.0000 89.9)",
+          "oklch(74% 0.0000 89.9)",
+          "oklch(86% 0.0000 89.9)",
+          "oklch(95% 0.0000 89.9)"
+        ]
+      },
+      "subtle": {
+        "role": "neutral",
+        "displayName": "Inset Ground",
+        "tonalRamp": [
+          "oklch(15% 0.0029 131.4)",
+          "oklch(26% 0.0061 131.4)",
+          "oklch(38% 0.0096 131.4)",
+          "oklch(50% 0.0102 131.4)",
+          "oklch(62% 0.0102 131.4)",
+          "oklch(74% 0.0102 131.4)",
+          "oklch(86% 0.0057 131.4)",
+          "oklch(95% 0.0020 131.4)"
+        ]
+      },
+      "text": {
+        "role": "neutral",
+        "displayName": "Forest Ink",
+        "tonalRamp": [
+          "oklch(15% 0.0106 170.6)",
+          "oklch(26% 0.0222 170.6)",
+          "oklch(38% 0.0349 170.6)",
+          "oklch(50% 0.0371 170.6)",
+          "oklch(62% 0.0371 170.6)",
+          "oklch(74% 0.0371 170.6)",
+          "oklch(86% 0.0208 170.6)",
+          "oklch(95% 0.0074 170.6)"
+        ]
+      },
+      "muted": {
+        "role": "neutral",
+        "displayName": "Supporting Ink",
+        "tonalRamp": [
+          "oklch(15% 0.0088 158.7)",
+          "oklch(26% 0.0185 158.7)",
+          "oklch(38% 0.0290 158.7)",
+          "oklch(50% 0.0308 158.7)",
+          "oklch(62% 0.0308 158.7)",
+          "oklch(74% 0.0308 158.7)",
+          "oklch(86% 0.0172 158.7)",
+          "oklch(95% 0.0062 158.7)"
+        ]
+      },
+      "line": {
+        "role": "neutral",
+        "displayName": "Fine Separator",
+        "tonalRamp": [
+          "oklch(15% 0.0052 134.9)",
+          "oklch(26% 0.0110 134.9)",
+          "oklch(38% 0.0172 134.9)",
+          "oklch(50% 0.0183 134.9)",
+          "oklch(62% 0.0183 134.9)",
+          "oklch(74% 0.0183 134.9)",
+          "oklch(86% 0.0102 134.9)",
+          "oklch(95% 0.0037 134.9)"
+        ]
+      },
+      "accent": {
+        "role": "primary",
+        "displayName": "Forest Action Green",
+        "tonalRamp": [
+          "oklch(15% 0.0235 158.6)",
+          "oklch(26% 0.0493 158.6)",
+          "oklch(38% 0.0775 158.6)",
+          "oklch(50% 0.0822 158.6)",
+          "oklch(62% 0.0822 158.6)",
+          "oklch(74% 0.0822 158.6)",
+          "oklch(86% 0.0460 158.6)",
+          "oklch(95% 0.0164 158.6)"
+        ]
+      },
+      "accent-hover": {
+        "role": "primary",
+        "displayName": "Deep Forest Hover",
+        "tonalRamp": [
+          "oklch(15% 0.0195 159.3)",
+          "oklch(26% 0.0409 159.3)",
+          "oklch(38% 0.0642 159.3)",
+          "oklch(50% 0.0681 159.3)",
+          "oklch(62% 0.0681 159.3)",
+          "oklch(74% 0.0681 159.3)",
+          "oklch(86% 0.0381 159.3)",
+          "oklch(95% 0.0136 159.3)"
+        ]
+      },
+      "focus": {
+        "role": "secondary",
+        "displayName": "Focus Blue",
+        "tonalRamp": [
+          "oklch(15% 0.0414 253.7)",
+          "oklch(26% 0.0870 253.7)",
+          "oklch(38% 0.1367 253.7)",
+          "oklch(50% 0.1450 253.7)",
+          "oklch(62% 0.1450 253.7)",
+          "oklch(74% 0.1450 253.7)",
+          "oklch(86% 0.0812 253.7)",
+          "oklch(95% 0.0290 253.7)"
+        ]
+      },
+      "sage": {
+        "role": "secondary",
+        "displayName": "Process Sage",
+        "tonalRamp": [
+          "oklch(15% 0.0045 130.4)",
+          "oklch(26% 0.0095 130.4)",
+          "oklch(38% 0.0150 130.4)",
+          "oklch(50% 0.0159 130.4)",
+          "oklch(62% 0.0159 130.4)",
+          "oklch(74% 0.0159 130.4)",
+          "oklch(86% 0.0089 130.4)",
+          "oklch(95% 0.0032 130.4)"
+        ]
+      },
+      "amber": {
+        "role": "tertiary",
+        "displayName": "Decision Amber",
+        "tonalRamp": [
+          "oklch(15% 0.0131 86.5)",
+          "oklch(26% 0.0276 86.5)",
+          "oklch(38% 0.0433 86.5)",
+          "oklch(50% 0.0460 86.5)",
+          "oklch(62% 0.0460 86.5)",
+          "oklch(74% 0.0460 86.5)",
+          "oklch(86% 0.0257 86.5)",
+          "oklch(95% 0.0092 86.5)"
+        ]
+      },
+      "warning": {
+        "role": "tertiary",
+        "displayName": "Warning Ink",
+        "tonalRamp": [
+          "oklch(15% 0.0273 74.8)",
+          "oklch(26% 0.0573 74.8)",
+          "oklch(38% 0.0900 74.8)",
+          "oklch(50% 0.0955 74.8)",
+          "oklch(62% 0.0955 74.8)",
+          "oklch(74% 0.0955 74.8)",
+          "oklch(86% 0.0535 74.8)",
+          "oklch(95% 0.0191 74.8)"
+        ]
+      },
+      "outcome": {
+        "role": "secondary",
+        "displayName": "Outcome Green",
+        "tonalRamp": [
+          "oklch(15% 0.0097 145.3)",
+          "oklch(26% 0.0205 145.3)",
+          "oklch(38% 0.0321 145.3)",
+          "oklch(50% 0.0341 145.3)",
+          "oklch(62% 0.0341 145.3)",
+          "oklch(74% 0.0341 145.3)",
+          "oklch(86% 0.0191 145.3)",
+          "oklch(95% 0.0068 145.3)"
+        ]
+      },
+      "danger": {
+        "role": "tertiary",
+        "displayName": "Error Red",
+        "tonalRamp": [
+          "oklch(15% 0.0426 24.8)",
+          "oklch(26% 0.0894 24.8)",
+          "oklch(38% 0.1406 24.8)",
+          "oklch(50% 0.1491 24.8)",
+          "oklch(62% 0.1491 24.8)",
+          "oklch(74% 0.1491 24.8)",
+          "oklch(86% 0.0835 24.8)",
+          "oklch(95% 0.0298 24.8)"
+        ]
+      },
+      "nav": {
+        "role": "primary",
+        "displayName": "Forest Shell",
+        "tonalRamp": [
+          "oklch(15% 0.0133 166.3)",
+          "oklch(26% 0.0279 166.3)",
+          "oklch(38% 0.0439 166.3)",
+          "oklch(50% 0.0466 166.3)",
+          "oklch(62% 0.0466 166.3)",
+          "oklch(74% 0.0466 166.3)",
+          "oklch(86% 0.0261 166.3)",
+          "oklch(95% 0.0093 166.3)"
+        ]
+      },
+      "selection": {
+        "role": "secondary",
+        "displayName": "Selection Blue",
+        "tonalRamp": [
+          "oklch(15% 0.0062 256.7)",
+          "oklch(26% 0.0130 256.7)",
+          "oklch(38% 0.0204 256.7)",
+          "oklch(50% 0.0217 256.7)",
+          "oklch(62% 0.0217 256.7)",
+          "oklch(74% 0.0217 256.7)",
+          "oklch(86% 0.0121 256.7)",
+          "oklch(95% 0.0043 256.7)"
+        ]
+      },
+      "ground-dark": {
+        "role": "neutral",
+        "displayName": "Working Ground — Dark",
+        "tonalRamp": [
+          "oklch(15% 0.0073 165.1)",
+          "oklch(26% 0.0154 165.1)",
+          "oklch(38% 0.0241 165.1)",
+          "oklch(50% 0.0256 165.1)",
+          "oklch(62% 0.0256 165.1)",
+          "oklch(74% 0.0256 165.1)",
+          "oklch(86% 0.0143 165.1)",
+          "oklch(95% 0.0051 165.1)"
+        ]
+      },
+      "surface-dark": {
+        "role": "neutral",
+        "displayName": "Working Surface — Dark",
+        "tonalRamp": [
+          "oklch(15% 0.0088 164.4)",
+          "oklch(26% 0.0185 164.4)",
+          "oklch(38% 0.0291 164.4)",
+          "oklch(50% 0.0309 164.4)",
+          "oklch(62% 0.0309 164.4)",
+          "oklch(74% 0.0309 164.4)",
+          "oklch(86% 0.0173 164.4)",
+          "oklch(95% 0.0062 164.4)"
+        ]
+      },
+      "subtle-dark": {
+        "role": "neutral",
+        "displayName": "Inset Ground — Dark",
+        "tonalRamp": [
+          "oklch(15% 0.0106 158.7)",
+          "oklch(26% 0.0223 158.7)",
+          "oklch(38% 0.0350 158.7)",
+          "oklch(50% 0.0372 158.7)",
+          "oklch(62% 0.0372 158.7)",
+          "oklch(74% 0.0372 158.7)",
+          "oklch(86% 0.0208 158.7)",
+          "oklch(95% 0.0074 158.7)"
+        ]
+      },
+      "text-dark": {
+        "role": "neutral",
+        "displayName": "Forest Ink — Dark",
+        "tonalRamp": [
+          "oklch(15% 0.0042 142.2)",
+          "oklch(26% 0.0088 142.2)",
+          "oklch(38% 0.0138 142.2)",
+          "oklch(50% 0.0147 142.2)",
+          "oklch(62% 0.0147 142.2)",
+          "oklch(74% 0.0147 142.2)",
+          "oklch(86% 0.0082 142.2)",
+          "oklch(95% 0.0029 142.2)"
+        ]
+      },
+      "muted-dark": {
+        "role": "neutral",
+        "displayName": "Supporting Ink — Dark",
+        "tonalRamp": [
+          "oklch(15% 0.0079 152.3)",
+          "oklch(26% 0.0166 152.3)",
+          "oklch(38% 0.0260 152.3)",
+          "oklch(50% 0.0276 152.3)",
+          "oklch(62% 0.0276 152.3)",
+          "oklch(74% 0.0276 152.3)",
+          "oklch(86% 0.0155 152.3)",
+          "oklch(95% 0.0055 152.3)"
+        ]
+      },
+      "line-dark": {
+        "role": "neutral",
+        "displayName": "Fine Separator — Dark",
+        "tonalRamp": [
+          "oklch(15% 0.0096 160.7)",
+          "oklch(26% 0.0201 160.7)",
+          "oklch(38% 0.0316 160.7)",
+          "oklch(50% 0.0335 160.7)",
+          "oklch(62% 0.0335 160.7)",
+          "oklch(74% 0.0335 160.7)",
+          "oklch(86% 0.0187 160.7)",
+          "oklch(95% 0.0067 160.7)"
+        ]
+      },
+      "accent-dark": {
+        "role": "primary",
+        "displayName": "Forest Action Green — Dark",
+        "tonalRamp": [
+          "oklch(15% 0.0261 152.4)",
+          "oklch(26% 0.0548 152.4)",
+          "oklch(38% 0.0862 152.4)",
+          "oklch(50% 0.0914 152.4)",
+          "oklch(62% 0.0914 152.4)",
+          "oklch(74% 0.0914 152.4)",
+          "oklch(86% 0.0512 152.4)",
+          "oklch(95% 0.0183 152.4)"
+        ]
+      },
+      "accent-hover-dark": {
+        "role": "primary",
+        "displayName": "Deep Forest Hover — Dark",
+        "tonalRamp": [
+          "oklch(15% 0.0210 152.0)",
+          "oklch(26% 0.0440 152.0)",
+          "oklch(38% 0.0692 152.0)",
+          "oklch(50% 0.0734 152.0)",
+          "oklch(62% 0.0734 152.0)",
+          "oklch(74% 0.0734 152.0)",
+          "oklch(86% 0.0411 152.0)",
+          "oklch(95% 0.0147 152.0)"
+        ]
+      },
+      "focus-dark": {
+        "role": "secondary",
+        "displayName": "Focus Blue — Dark",
+        "tonalRamp": [
+          "oklch(15% 0.0265 254.2)",
+          "oklch(26% 0.0557 254.2)",
+          "oklch(38% 0.0875 254.2)",
+          "oklch(50% 0.0928 254.2)",
+          "oklch(62% 0.0928 254.2)",
+          "oklch(74% 0.0928 254.2)",
+          "oklch(86% 0.0520 254.2)",
+          "oklch(95% 0.0186 254.2)"
+        ]
+      },
+      "sage-dark": {
+        "role": "secondary",
+        "displayName": "Process Sage — Dark",
+        "tonalRamp": [
+          "oklch(15% 0.0131 152.1)",
+          "oklch(26% 0.0275 152.1)",
+          "oklch(38% 0.0432 152.1)",
+          "oklch(50% 0.0458 152.1)",
+          "oklch(62% 0.0458 152.1)",
+          "oklch(74% 0.0458 152.1)",
+          "oklch(86% 0.0257 152.1)",
+          "oklch(95% 0.0092 152.1)"
+        ]
+      },
+      "amber-dark": {
+        "role": "tertiary",
+        "displayName": "Decision Amber — Dark",
+        "tonalRamp": [
+          "oklch(15% 0.0148 80.9)",
+          "oklch(26% 0.0312 80.9)",
+          "oklch(38% 0.0490 80.9)",
+          "oklch(50% 0.0519 80.9)",
+          "oklch(62% 0.0519 80.9)",
+          "oklch(74% 0.0519 80.9)",
+          "oklch(86% 0.0291 80.9)",
+          "oklch(95% 0.0104 80.9)"
+        ]
+      },
+      "warning-dark": {
+        "role": "tertiary",
+        "displayName": "Warning Ink — Dark",
+        "tonalRamp": [
+          "oklch(15% 0.0272 85.9)",
+          "oklch(26% 0.0571 85.9)",
+          "oklch(38% 0.0897 85.9)",
+          "oklch(50% 0.0951 85.9)",
+          "oklch(62% 0.0951 85.9)",
+          "oklch(74% 0.0951 85.9)",
+          "oklch(86% 0.0533 85.9)",
+          "oklch(95% 0.0190 85.9)"
+        ]
+      },
+      "outcome-dark": {
+        "role": "secondary",
+        "displayName": "Outcome Green — Dark",
+        "tonalRamp": [
+          "oklch(15% 0.0171 151.2)",
+          "oklch(26% 0.0359 151.2)",
+          "oklch(38% 0.0564 151.2)",
+          "oklch(50% 0.0598 151.2)",
+          "oklch(62% 0.0598 151.2)",
+          "oklch(74% 0.0598 151.2)",
+          "oklch(86% 0.0335 151.2)",
+          "oklch(95% 0.0120 151.2)"
+        ]
+      },
+      "danger-dark": {
+        "role": "tertiary",
+        "displayName": "Error Red — Dark",
+        "tonalRamp": [
+          "oklch(15% 0.0260 24.2)",
+          "oklch(26% 0.0546 24.2)",
+          "oklch(38% 0.0858 24.2)",
+          "oklch(50% 0.0910 24.2)",
+          "oklch(62% 0.0910 24.2)",
+          "oklch(74% 0.0910 24.2)",
+          "oklch(86% 0.0510 24.2)",
+          "oklch(95% 0.0182 24.2)"
+        ]
+      },
+      "nav-dark": {
+        "role": "primary",
+        "displayName": "Forest Shell — Dark",
+        "tonalRamp": [
+          "oklch(15% 0.0091 163.0)",
+          "oklch(26% 0.0191 163.0)",
+          "oklch(38% 0.0299 163.0)",
+          "oklch(50% 0.0318 163.0)",
+          "oklch(62% 0.0318 163.0)",
+          "oklch(74% 0.0318 163.0)",
+          "oklch(86% 0.0178 163.0)",
+          "oklch(95% 0.0064 163.0)"
+        ]
+      },
+      "selection-dark": {
+        "role": "secondary",
+        "displayName": "Selection Blue — Dark",
+        "tonalRamp": [
+          "oklch(15% 0.0184 245.6)",
+          "oklch(26% 0.0386 245.6)",
+          "oklch(38% 0.0606 245.6)",
+          "oklch(50% 0.0643 245.6)",
+          "oklch(62% 0.0643 245.6)",
+          "oklch(74% 0.0643 245.6)",
+          "oklch(86% 0.0360 245.6)",
+          "oklch(95% 0.0129 245.6)"
+        ]
+      },
+      "nav-text": {
+        "role": "neutral",
+        "displayName": "Navigation Ink",
+        "tonalRamp": [
+          "oklch(15% 0.0073 152.8)",
+          "oklch(26% 0.0152 152.8)",
+          "oklch(38% 0.0239 152.8)",
+          "oklch(50% 0.0254 152.8)",
+          "oklch(62% 0.0254 152.8)",
+          "oklch(74% 0.0254 152.8)",
+          "oklch(86% 0.0142 152.8)",
+          "oklch(95% 0.0051 152.8)"
+        ]
+      },
+      "nav-hover": {
+        "role": "primary",
+        "displayName": "Navigation Hover",
+        "tonalRamp": [
+          "oklch(15% 0.0166 160.7)",
+          "oklch(26% 0.0348 160.7)",
+          "oklch(38% 0.0548 160.7)",
+          "oklch(50% 0.0581 160.7)",
+          "oklch(62% 0.0581 160.7)",
+          "oklch(74% 0.0581 160.7)",
+          "oklch(86% 0.0325 160.7)",
+          "oklch(95% 0.0116 160.7)"
+        ]
+      },
+      "nav-active": {
+        "role": "primary",
+        "displayName": "Current Navigation",
+        "tonalRamp": [
+          "oklch(15% 0.0191 157.4)",
+          "oklch(26% 0.0402 157.4)",
+          "oklch(38% 0.0632 157.4)",
+          "oklch(50% 0.0670 157.4)",
+          "oklch(62% 0.0670 157.4)",
+          "oklch(74% 0.0670 157.4)",
+          "oklch(86% 0.0375 157.4)",
+          "oklch(95% 0.0134 157.4)"
+        ]
+      },
+      "nav-focus": {
+        "role": "secondary",
+        "displayName": "Navigation Focus Blue",
+        "tonalRamp": [
+          "oklch(15% 0.0219 245.8)",
+          "oklch(26% 0.0460 245.8)",
+          "oklch(38% 0.0723 245.8)",
+          "oklch(50% 0.0767 245.8)",
+          "oklch(62% 0.0767 245.8)",
+          "oklch(74% 0.0767 245.8)",
+          "oklch(86% 0.0430 245.8)",
+          "oklch(95% 0.0153 245.8)"
+        ]
+      },
+      "process-stroke": {
+        "role": "secondary",
+        "displayName": "Process Outline",
+        "tonalRamp": [
+          "oklch(15% 0.0134 137.0)",
+          "oklch(26% 0.0281 137.0)",
+          "oklch(38% 0.0442 137.0)",
+          "oklch(50% 0.0469 137.0)",
+          "oklch(62% 0.0469 137.0)",
+          "oklch(74% 0.0469 137.0)",
+          "oklch(86% 0.0263 137.0)",
+          "oklch(95% 0.0094 137.0)"
+        ]
+      },
+      "decision-stroke": {
+        "role": "tertiary",
+        "displayName": "Decision Outline",
+        "tonalRamp": [
+          "oklch(15% 0.0301 85.5)",
+          "oklch(26% 0.0632 85.5)",
+          "oklch(38% 0.0994 85.5)",
+          "oklch(50% 0.1054 85.5)",
+          "oklch(62% 0.1054 85.5)",
+          "oklch(74% 0.1054 85.5)",
+          "oklch(86% 0.0590 85.5)",
+          "oklch(95% 0.0211 85.5)"
+        ]
+      },
+      "source-ground": {
+        "role": "neutral",
+        "displayName": "Source Paper",
+        "tonalRamp": [
+          "oklch(15% 0.0008 128.5)",
+          "oklch(26% 0.0017 128.5)",
+          "oklch(38% 0.0027 128.5)",
+          "oklch(50% 0.0028 128.5)",
+          "oklch(62% 0.0028 128.5)",
+          "oklch(74% 0.0028 128.5)",
+          "oklch(86% 0.0016 128.5)",
+          "oklch(95% 0.0006 128.5)"
+        ]
+      },
+      "source-overlay": {
+        "role": "secondary",
+        "displayName": "Source Selection Wash",
+        "tonalRamp": [
+          "oklch(15% 0.0414 253.7)",
+          "oklch(26% 0.0870 253.7)",
+          "oklch(38% 0.1367 253.7)",
+          "oklch(50% 0.1450 253.7)",
+          "oklch(62% 0.1450 253.7)",
+          "oklch(74% 0.1450 253.7)",
+          "oklch(86% 0.0812 253.7)",
+          "oklch(95% 0.0290 253.7)"
+        ]
+      },
+      "primary-text-dark": {
+        "role": "neutral",
+        "displayName": "Dark Primary Ink",
+        "tonalRamp": [
+          "oklch(15% 0.0107 163.9)",
+          "oklch(26% 0.0225 163.9)",
+          "oklch(38% 0.0354 163.9)",
+          "oklch(50% 0.0375 163.9)",
+          "oklch(62% 0.0375 163.9)",
+          "oklch(74% 0.0375 163.9)",
+          "oklch(86% 0.0210 163.9)",
+          "oklch(95% 0.0075 163.9)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Page and diagram headings."
+      },
+      "headline-mobile": {
+        "displayName": "Headline Mobile",
+        "purpose": "Page and diagram headings at 600px and below."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Section headings."
+      },
+      "panel-title": {
+        "displayName": "Panel Title",
+        "purpose": "Compact panel and library headings."
+      },
+      "step-title": {
+        "displayName": "Step Title",
+        "purpose": "Selected graph-step heading."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Ordinary paragraphs."
+      },
+      "body-small": {
+        "displayName": "Body Small",
+        "purpose": "Panel explanations and notices."
+      },
+      "guide-body": {
+        "displayName": "Guide Body",
+        "purpose": "Guide paragraphs, with 73ch maximum line length."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Compact semibold button labels."
+      },
+      "graph-label": {
+        "displayName": "Graph Label",
+        "purpose": "Fixed-size node and HTML branch-label text."
+      },
+      "caption": {
+        "displayName": "Caption",
+        "purpose": "Secondary metadata and status text."
+      }
+    },
+    "shadows": [
+      {
+        "name": "menu",
+        "value": "0 8px 24px #102a241f",
+        "purpose": "Floating export options."
+      },
+      {
+        "name": "confirmation",
+        "value": "0 8px 30px #102a2426",
+        "purpose": "Fixed confirmation toast."
+      },
+      {
+        "name": "dialog",
+        "value": "0 18px 60px #102a2440",
+        "purpose": "Native modal dialog; backdrop is #112a24a1."
+      }
+    ],
+    "motion": [
+      {
+        "name": "control-state",
+        "value": "background-color 160ms ease-out, border-color 160ms ease-out",
+        "purpose": "Button, icon-button and export-summary hover states."
+      },
+      {
+        "name": "node-state",
+        "value": "background-color 180ms ease-out, border-color 180ms ease-out",
+        "purpose": "Graph-node background and border states."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "animation: none !important; transition: none !important; scroll-behavior: auto !important;",
+        "purpose": "Global prefers-reduced-motion: reduce override."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "wide-min",
+        "value": "1600px"
+      },
+      {
+        "name": "compact-max",
+        "value": "1190px"
+      },
+      {
+        "name": "stack-max",
+        "value": "960px"
+      },
+      {
+        "name": "mobile-max",
+        "value": "600px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Primary save or confirmation action.",
+      "html": "<button class=\"ds-btn-primary\">Save diagram</button>",
+      "css": ".ds-btn-primary{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:10px 14px;border:1px solid var(--line,#d9e1d5);border-radius:7px;background:var(--surface,#fff);color:var(--text,#203b32);font-family:Manrope,sans-serif;font-size:0.8125rem;font-weight:600;line-height:1.3;cursor:pointer;transition:background-color 160ms ease-out,border-color 160ms ease-out}.ds-btn-primary:hover{background:var(--subtle,#eef2eb);border-color:var(--muted,#52665a)}.ds-btn-primary:focus-visible{outline:3px solid var(--focus,#1c68b8);outline-offset:4px}.ds-btn-primary:disabled{opacity:0.48;cursor:not-allowed}@media(prefers-reduced-motion:reduce){.ds-btn-primary{transition:none}}.ds-btn-primary{background:var(--accent,#256344);border-color:var(--accent,#256344);color:#fff}.ds-btn-primary:hover{background:var(--accent-hover,#184a32);border-color:var(--muted,#52665a)}:host-context([data-theme=\"dark\"]) .ds-btn-primary{color:#183126}"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Ordinary import, correction or navigation action.",
+      "html": "<button class=\"ds-btn-secondary\">Import diagram</button>",
+      "css": ".ds-btn-secondary{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:10px 14px;border:1px solid var(--line,#d9e1d5);border-radius:7px;background:var(--surface,#fff);color:var(--text,#203b32);font-family:Manrope,sans-serif;font-size:0.8125rem;font-weight:600;line-height:1.3;cursor:pointer;transition:background-color 160ms ease-out,border-color 160ms ease-out}.ds-btn-secondary:hover{background:var(--subtle,#eef2eb);border-color:var(--muted,#52665a)}.ds-btn-secondary:focus-visible{outline:3px solid var(--focus,#1c68b8);outline-offset:4px}.ds-btn-secondary:disabled{opacity:0.48;cursor:not-allowed}@media(prefers-reduced-motion:reduce){.ds-btn-secondary{transition:none}}"
+    },
+    {
+      "name": "Ghost Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Lower-emphasis action alongside a filled button.",
+      "html": "<button class=\"ds-btn-ghost\">New diagram</button>",
+      "css": ".ds-btn-ghost{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:10px 14px;border:1px solid var(--line,#d9e1d5);border-radius:7px;background:var(--surface,#fff);color:var(--text,#203b32);font-family:Manrope,sans-serif;font-size:0.8125rem;font-weight:600;line-height:1.3;cursor:pointer;transition:background-color 160ms ease-out,border-color 160ms ease-out}.ds-btn-ghost:hover{background:var(--subtle,#eef2eb);border-color:var(--muted,#52665a)}.ds-btn-ghost:focus-visible{outline:3px solid var(--focus,#1c68b8);outline-offset:4px}.ds-btn-ghost:disabled{opacity:0.48;cursor:not-allowed}@media(prefers-reduced-motion:reduce){.ds-btn-ghost{transition:none}}.ds-btn-ghost{background:transparent;border-color:transparent}.ds-btn-ghost:hover{background:var(--subtle,#eef2eb);border-color:var(--muted,#52665a)}"
+    },
+    {
+      "name": "Danger Button",
+      "kind": "button",
+      "refersTo": "button-danger",
+      "description": "Destructive library action.",
+      "html": "<button class=\"ds-btn-danger\">Delete diagram</button>",
+      "css": ".ds-btn-danger{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:10px 14px;border:1px solid var(--line,#d9e1d5);border-radius:7px;background:var(--surface,#fff);color:var(--text,#203b32);font-family:Manrope,sans-serif;font-size:0.8125rem;font-weight:600;line-height:1.3;cursor:pointer;transition:background-color 160ms ease-out,border-color 160ms ease-out}.ds-btn-danger:hover{background:var(--subtle,#eef2eb);border-color:var(--muted,#52665a)}.ds-btn-danger:focus-visible{outline:3px solid var(--focus,#1c68b8);outline-offset:4px}.ds-btn-danger:disabled{opacity:0.48;cursor:not-allowed}@media(prefers-reduced-motion:reduce){.ds-btn-danger{transition:none}}.ds-btn-danger{color:var(--danger,#a02f2f);border-color:var(--danger,#a02f2f)}.ds-btn-danger:hover{border-color:var(--muted,#52665a)}"
+    },
+    {
+      "name": "Labelled Text Field",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Native diagram-title field with a persistent label.",
+      "html": "<label class=\"ds-field\">Diagram title<input class=\"ds-input\" type=\"text\" value=\"Scholarship application\" /></label>",
+      "css": ".ds-field{display:grid;gap:7px;margin:16px 0;color:var(--text,#203b32);font-family:Manrope,sans-serif;font-size:0.875rem;font-weight:500}.ds-input{width:100%;min-height:44px;padding:10px 12px;border:1px solid var(--line,#d9e1d5);border-radius:7px;background:var(--surface,#fff);color:var(--text,#203b32);font-family:Manrope,sans-serif;font-size:1rem;font-weight:400;caret-color:var(--accent,#256344)}.ds-input::placeholder{color:var(--muted,#52665a);opacity:1}.ds-input:focus-visible{outline:3px solid var(--focus,#1c68b8);outline-offset:4px}"
+    },
+    {
+      "name": "Main Navigation",
+      "kind": "nav",
+      "refersTo": "navigation",
+      "description": "Forest rail with an explicit current-page state; horizontal on mobile.",
+      "html": "<nav class=\"ds-nav\" aria-label=\"Main navigation\"><a class=\"ds-nav-link ds-nav-active\" href=\"#workspace\" aria-current=\"page\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"22\" height=\"22\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M15 6a9 9 0 0 0-9 9V3\"></path><circle cx=\"18\" cy=\"6\" r=\"3\"></circle><circle cx=\"6\" cy=\"18\" r=\"3\"></circle></svg><span>Workspace</span></a><a class=\"ds-nav-link\" href=\"#library\">Library</a></nav>",
+      "css": ".ds-nav{display:flex;flex-direction:column;gap:12px;width:100px;padding:26px 9px;background:var(--nav,#193b2e);font-family:Manrope,sans-serif}.ds-nav-link{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;min-height:74px;padding:9px 0;color:#cadbce;text-decoration:none;font-size:0.75rem;border-radius:9px}.ds-nav-link:hover{background:#254e3a}.ds-nav-active{color:#fff;background:#315f45}.ds-nav-link:focus-visible{outline:3px solid #a6d5ff;outline-offset:4px}@media(max-width:600px){.ds-nav{flex-direction:row;gap:6px;width:auto;padding:8px 12px}.ds-nav-link{flex:1;min-height:56px;padding:5px;gap:4px;font-size:0.6875rem}.ds-nav-link svg{width:19px;height:19px}}"
+    },
+    {
+      "name": "Confirmed Status Badge",
+      "kind": "chip",
+      "refersTo": "badge-success",
+      "description": "Informational confirmation state with text and SVG.",
+      "html": "<span class=\"ds-badge\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><circle cx=\"12\" cy=\"12\" r=\"10\"></circle><path d=\"m16 9-5.5 5.5L8 12\"></path></svg><span>Confirmed structure</span></span>",
+      "css": ".ds-badge{display:inline-flex;align-items:center;gap:6px;padding:5px 8px;border-radius:5px;background:var(--sage,#edf3e8);color:var(--accent,#256344);font-family:Manrope,sans-serif;font-size:0.75rem;line-height:1.5}"
+    },
+    {
+      "name": "Working Panel",
+      "kind": "card",
+      "refersTo": "panel",
+      "description": "Flat exploration/review container with an inset selected step.",
+      "html": "<aside class=\"ds-panel\" aria-label=\"Accessible diagram explorer\"><h2>Explore the path</h2><p class=\"ds-panel-intro\">Choose a branch to move through the diagram.</p><div class=\"ds-step\"><h3 tabindex=\"-1\">Start application</h3><p>Current step</p></div></aside>",
+      "css": ".ds-panel{padding:22px;background:var(--surface,#fff);color:var(--text,#203b32);border:1px solid var(--line,#d9e1d5);border-radius:10px;font-family:Manrope,sans-serif}.ds-panel h2{margin:0;font-size:1rem;line-height:1.45;letter-spacing:-0.015em;font-weight:700}.ds-panel-intro{margin:8px 0 20px;font-size:0.8125rem;line-height:1.65;color:var(--muted,#52665a)}.ds-step{padding:17px;background:var(--subtle,#eef2eb);border-radius:7px;margin:20px 0 14px}.ds-step h3{margin:0;font-size:1.0625rem;line-height:1.5;font-weight:700}.ds-step p{margin:12px 0 0;font-size:0.75rem;line-height:1.65;color:var(--muted,#52665a)}.ds-step h3:focus{outline:3px solid var(--focus,#1c68b8);outline-offset:4px;border-radius:2px}@media(max-width:1190px){.ds-panel{padding:18px}}@media(max-width:600px){.ds-panel{padding:20px}}"
+    },
+    {
+      "name": "Graph Process Node",
+      "kind": "custom",
+      "refersTo": "graph-node",
+      "description": "Native process node with semantic selected state.",
+      "html": "<button class=\"ds-node\" aria-pressed=\"false\" aria-label=\"Verify documents, process\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><rect width=\"18\" height=\"18\" x=\"3\" y=\"3\" rx=\"2\"></rect></svg><span>Verify documents</span></button>",
+      "css": ".ds-node{display:flex;align-items:center;justify-content:center;gap:7px;width:220px;min-height:76px;padding:7px 8px;border:1px solid #a0b598;border-radius:8px;background:var(--sage,#edf3e8);color:var(--text,#203b32);font-family:Manrope,sans-serif;font-size:0.8125rem;font-weight:600;line-height:1.4;text-align:center;overflow-wrap:anywhere;cursor:pointer;transition:background-color 180ms ease-out,border-color 180ms ease-out}.ds-node:hover{border-color:var(--accent,#256344);filter:brightness(0.98)}.ds-node[aria-pressed=\"true\"]{background:var(--selection,#e7f1ff);border:2px solid var(--focus,#1c68b8)}.ds-node:focus-visible{outline:3px solid var(--focus,#1c68b8);outline-offset:4px}@media(prefers-reduced-motion:reduce){.ds-node{transition:none}}"
+    },
+    {
+      "name": "Branch Button",
+      "kind": "custom",
+      "refersTo": "branch-button",
+      "description": "Full branch label and target text used for keyboard traversal.",
+      "html": "<button class=\"ds-branch\"><span class=\"ds-branch-copy\"><strong>Yes</strong><span>Income under ₹2.5 lakh?</span></span><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M5 12h14\"></path><path d=\"m12 5 7 7-7 7\"></path></svg></button>",
+      "css": ".ds-branch{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:70px;width:100%;padding:14px;border:1px solid var(--line,#d9e1d5);border-radius:7px;background:var(--surface,#fff);color:var(--text,#203b32);font-family:Manrope,sans-serif;text-align:left;cursor:pointer}.ds-branch-copy{display:grid;gap:5px}.ds-branch strong{font-size:0.8125rem;font-weight:700;color:var(--accent,#256344)}.ds-branch-copy>span{font-size:0.8125rem}.ds-branch:hover{background:var(--subtle,#eef2eb);border-color:var(--accent,#256344)}.ds-branch:focus-visible{outline:3px solid var(--focus,#1c68b8);outline-offset:4px}"
+    }
+  ],
+  "narrative": {
+    "northStar": "A Readable Route",
+    "overview": "Graphear uses a quiet forest shell around a readable working ground. Sage process nodes, amber decisions, green outcomes and blue current selection make graph state visible without competing with the diagram. Manrope, fine separators and native controls keep the interface consistent across exploration, editing, source review and learning.\n\nThe visual language supports keyboard and structured text interaction alongside the canvas. Color reinforces labels, node types, review status and path structure; it does not replace those descriptions. Flat working surfaces keep attention on the graph, while restrained shadows identify temporary menus, confirmations and dialogs.\n\nThis record is derived from the finished code and the user-pinned green-and-neutral direction. There is no approved visual comp or quality card. The independent reviewer inspected six viewport/theme captures and five workflow captures and returned a ship verdict on four scored fixes: keyboard traversal focus, fixed-size branch labels, original-source enlargement and metadata below the selected-step heading. That verdict is limited to those fixes. No blind or low-vision user study, screen-reader usability session or measured learning improvement is established.",
+    "keyCharacteristics": [
+      "Forest navigation and green-neutral working surfaces in light and dark themes.",
+      "Compact Manrope hierarchy with fixed-size graph labels.",
+      "Native controls, visible focus and text equivalents for graph actions.",
+      "Semantic node fills, path highlighting and explicit source-review states."
+    ],
+    "rules": [
+      {
+        "name": "The State Has a Name Rule",
+        "body": "Pair node and review colors with a type, label, status or structured description. Blue selection and traversal never carry meaning alone.",
+        "section": "colors"
+      },
+      {
+        "name": "The Theme Pair Rule",
+        "body": "Use the matching light or dark semantic tokens. Keep original-source pixels and their viewing ground faithful to the imported document.",
+        "section": "colors"
+      },
+      {
+        "name": "The Fixed Label Rule",
+        "body": "Keep rendered branch labels at the graph-label role outside the scaled SVG. Preserve the full branch label in the explorer and structured text.",
+        "section": "typography"
+      },
+      {
+        "name": "The Working Plane Rule",
+        "body": "Working panels remain flat. Reserve the observed soft shadows for floating menus, transient confirmations and modal dialogs.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do use the semantic light/dark pairs for surfaces, text, borders, node fills and selection.",
+      "Do keep primary actions, navigation, fields and branches as native, labelled controls with visible focus.",
+      "Do place the selected-step heading before its type and review metadata and move focus to that heading after branch traversal.",
+      "Do preserve source-review uncertainty with explicit text and dashed graph connections or nodes.",
+      "Do retain reduced-motion behavior and the canvas scroll region at narrow widths."
+    ],
+    "donts": [
+      "Don't substitute a decorative hero or fabricated results for the working diagram and its text interaction.",
+      "Don't scale branch typography inside the graph SVG or truncate the explorer's full branch descriptions.",
+      "Don't use color as the only indication of selection, outcome, review status or change.",
+      "Don't treat the scoped ship verdict or automated accessibility checks as evidence of user validation."
+    ]
+  }
+}

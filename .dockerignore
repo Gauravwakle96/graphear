@@ -1,0 +1,12 @@
+node_modules
+dist
+data
+.git
+.env
+.env.*
+coverage
+test-results
+playwright-report
+.impeccable
+.planning
+apps/web/public/ocr

@@ -1,0 +1,29 @@
+# Verification report
+
+Verified locally on Windows with Node 24.14.1, npm 11.11.0 and Chrome. These are engineering checks of this prototype, not a hackathon judging score or a user-study result.
+
+| Check                                | Actual result                                                                                                                                                                             |
+| ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `npm run lint`                       | Passed, zero warnings/errors                                                                                                                                                              |
+| `npm run typecheck`                  | Passed                                                                                                                                                                                    |
+| `npm run test:coverage`              | 38 tests passed across core/learning/API suites                                                                                                                                           |
+| Selected core/API coverage           | 91.51% lines, 89.38% statements, 76.33% branches; frontend not included in these coverage numbers                                                                                         |
+| `npm run test:e2e`                   | 13 browser tests passed                                                                                                                                                                   |
+| Browser accessibility                | Zero axe violations on desktop 1440×900, tablet 768×1024, mobile 390×844, in light/dark themes; source-inspector dialog and hidden-canvas mode also audited                               |
+| Keyboard                             | Skip-to-main, Enter branch activation and next-branch focus; source zoom/scroll/Escape focus restoration verified                                                                         |
+| Raster import                        | Real synthetic PNG processed by Tesseract; draft source review appeared; no image sent to the API                                                                                         |
+| Save/share                           | IndexedDB and server saves, read-only viewing and revocation verified                                                                                                                     |
+| Production build                     | Vite frontend and bundled Express server built successfully                                                                                                                               |
+| `npm run test:smoke`                 | Built server served frontend/API; CSP/headers, Secure+HttpOnly+SameSite cookie, sharing, real OCR under CSP and offline reload/navigation passed; no API cache entries/runtime exceptions |
+| `npm audit` / `npm audit --omit=dev` | Zero reported vulnerabilities at verification time                                                                                                                                        |
+| Formatting                           | Prettier check passed                                                                                                                                                                     |
+| Impeccable detector                  | Ran once, returned no findings                                                                                                                                                            |
+| ECC Chrome DevTools                  | Actual app inspected; no console errors/warnings on final workspace reload                                                                                                                |
+| Lighthouse snapshot                  | Actual app URL: accessibility 100, best practices 100, SEO 100; agentic browsing 50 because no llms.txt is supplied; no performance score claimed                                         |
+| Synthetic algorithm benchmark        | Correct 10/50/100-node chains, 100 runs each; report in `benchmark.json`                                                                                                                  |
+
+The first browser run exposed an incorrect combobox selector; it was corrected and the repair flow passed. An initial DevTools Lighthouse capture targeted a browser error page and was discarded. An invalid report-directory request was retried using the plugin's default temporary output, without changing permissions. Development dependency findings were resolved by upgrading maintained ESLint tooling and a documented minimatch 11.0.1 override; lint and audits passed afterward.
+
+The independent visual review inspected six responsive/theme captures and five workflow captures. It requested four fixes: traversal focus, fixed-size branch labels, source enlargement and metadata ordering. All four were implemented, regression-tested and scored resolved in its final **ship** verdict. That verdict covers the four scored fixes; no broader usability certification is claimed. The design system is recorded in DESIGN.md and `.impeccable/design.json`.
+
+Not performed: real blind/low-vision user study, screen-reader usability sessions with NVDA/JAWS/VoiceOver, representative OCR accuracy evaluation, external penetration test, load test, Docker build (Docker unavailable here), hosted deployment, or a verified GitHub Actions run. CI configuration is included; a local pass does not establish remote CI success. Benchmark timings are machine-specific and exclude OCR/rendering.

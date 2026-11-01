@@ -1,0 +1,14 @@
+node_modules/
+dist/
+data/
+.env
+.env.*
+!.env.example
+coverage/
+test-results/
+playwright-report/
+apps/web/public/ocr/
+.impeccable/review/
+.impeccable/mocks/
+*.log
+*.tsbuildinfo

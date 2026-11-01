@@ -1,0 +1,118 @@
+{
+  "schemaVersion": 1,
+  "id": "scholarship-demo",
+  "title": "Scholarship application",
+  "description": "A synthetic learning example. Explore two decisions and follow the route to approval.",
+  "width": 820,
+  "height": 740,
+  "source": {
+    "name": "Authored learning example",
+    "kind": "sample"
+  },
+  "nodes": [
+    {
+      "id": "start",
+      "label": "Start application",
+      "type": "start",
+      "x": 320,
+      "y": 35,
+      "width": 180,
+      "height": 58,
+      "review": "confirmed"
+    },
+    {
+      "id": "eligibility",
+      "label": "Enrolled student?",
+      "type": "decision",
+      "x": 310,
+      "y": 160,
+      "width": 200,
+      "height": 88,
+      "review": "confirmed"
+    },
+    {
+      "id": "income",
+      "label": "Income under ₹2.5 lakh?",
+      "type": "decision",
+      "x": 310,
+      "y": 305,
+      "width": 200,
+      "height": 88,
+      "review": "confirmed"
+    },
+    {
+      "id": "documents",
+      "label": "Verify documents",
+      "type": "process",
+      "x": 310,
+      "y": 455,
+      "width": 200,
+      "height": 70,
+      "review": "confirmed"
+    },
+    {
+      "id": "approved",
+      "label": "Application approved",
+      "type": "end",
+      "x": 310,
+      "y": 605,
+      "width": 200,
+      "height": 65,
+      "review": "confirmed"
+    },
+    {
+      "id": "declined",
+      "label": "Not eligible",
+      "type": "end",
+      "x": 55,
+      "y": 330,
+      "width": 170,
+      "height": 70,
+      "review": "confirmed"
+    }
+  ],
+  "edges": [
+    {
+      "id": "begin",
+      "source": "start",
+      "target": "eligibility",
+      "label": "",
+      "review": "confirmed"
+    },
+    {
+      "id": "enrolled-yes",
+      "source": "eligibility",
+      "target": "income",
+      "label": "Yes",
+      "review": "confirmed"
+    },
+    {
+      "id": "enrolled-no",
+      "source": "eligibility",
+      "target": "declined",
+      "label": "No",
+      "review": "confirmed"
+    },
+    {
+      "id": "income-yes",
+      "source": "income",
+      "target": "documents",
+      "label": "Yes",
+      "review": "confirmed"
+    },
+    {
+      "id": "income-no",
+      "source": "income",
+      "target": "declined",
+      "label": "No",
+      "review": "confirmed"
+    },
+    {
+      "id": "verify",
+      "source": "documents",
+      "target": "approved",
+      "label": "Complete",
+      "review": "confirmed"
+    }
+  ]
+}

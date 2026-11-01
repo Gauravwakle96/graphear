@@ -1,0 +1,60 @@
+import js from '@eslint/js';
+import ts from 'typescript-eslint';
+import hooks from 'eslint-plugin-react-hooks';
+export default ts.config(
+  {
+    ignores: [
+      '**/node_modules/**',
+      '**/dist/**',
+      '**/public/ocr/**',
+      'coverage/**',
+      'test-results/**',
+      'playwright-report/**',
+    ],
+  },
+  js.configs.recommended,
+  ...ts.configs.recommended,
+  {
+    files: ['**/*.{ts,tsx,mjs,js}'],
+    languageOptions: {
+      globals: {
+        window: 'readonly',
+        document: 'readonly',
+        navigator: 'readonly',
+        URL: 'readonly',
+        Blob: 'readonly',
+        File: 'readonly',
+        FileReader: 'readonly',
+        DOMParser: 'readonly',
+        XMLSerializer: 'readonly',
+        Image: 'readonly',
+        crypto: 'readonly',
+        console: 'readonly',
+        fetch: 'readonly',
+        process: 'readonly',
+        setTimeout: 'readonly',
+        clearTimeout: 'readonly',
+        SpeechSynthesisUtterance: 'readonly',
+        AbortController: 'readonly',
+        HTMLElement: 'readonly',
+        SVGElement: 'readonly',
+        HTMLInputElement: 'readonly',
+        HTMLDialogElement: 'readonly',
+        Buffer: 'readonly',
+        structuredClone: 'readonly',
+        indexedDB: 'readonly',
+        localStorage: 'readonly',
+        requestAnimationFrame: 'readonly',
+        self: 'readonly',
+        caches: 'readonly',
+        Response: 'readonly',
+      },
+    },
+    plugins: { 'react-hooks': hooks },
+    rules: {
+      'react-hooks/rules-of-hooks': 'error',
+      'react-hooks/exhaustive-deps': 'warn',
+      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+    },
+  },
+);

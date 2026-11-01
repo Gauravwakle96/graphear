@@ -1,0 +1,32 @@
+{
+  "label": "Synthetic graph algorithm benchmark; excludes image import and browser rendering",
+  "node": "v24.14.1",
+  "platform": "win32",
+  "measuredAt": "2026-10-31T21:58:18.342Z",
+  "cases": [
+    {
+      "nodes": 10,
+      "edges": 9,
+      "runs": 100,
+      "medianMs": 0.021,
+      "p95Ms": 0.135,
+      "correct": true
+    },
+    {
+      "nodes": 50,
+      "edges": 49,
+      "runs": 100,
+      "medianMs": 0.126,
+      "p95Ms": 0.178,
+      "correct": true
+    },
+    {
+      "nodes": 100,
+      "edges": 99,
+      "runs": 100,
+      "medianMs": 0.286,
+      "p95Ms": 0.447,
+      "correct": true
+    }
+  ]
+}

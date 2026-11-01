@@ -1,0 +1,10 @@
+node_modules
+dist
+coverage
+data
+apps/web/public/ocr
+package-lock.json
+playwright-report
+test-results
+.impeccable/review
+.planning

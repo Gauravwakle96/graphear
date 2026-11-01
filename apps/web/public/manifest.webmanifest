@@ -1,0 +1,10 @@
+{
+  "name": "Graphear",
+  "short_name": "Graphear",
+  "description": "Explore, repair and understand flowcharts.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f5f7f4",
+  "theme_color": "#173e32",
+  "icons": [{ "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+}
