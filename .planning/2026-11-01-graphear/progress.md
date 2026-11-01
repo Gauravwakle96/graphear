@@ -21,6 +21,8 @@
 - Recaptured six viewports/themes plus source inspector and Enter/Tab keyboard focus evidence.
 - Final browser suite: 13 passed; built-production smoke includes real raster OCR under CSP.
 - Staged source reviewed: 76 files, no suspected credential patterns; git diff --cached --check passed.
+- DESIGN.md and .impeccable/design.json completed and verified; final format check passes.
+- Committed implementation as abd7af10e9c96c178ea80765efab0da209bbbcd5 and pushed main to the requested repository. Native git remote SHA matched local HEAD; working tree was clean.
 
 ### Test Results
 | Test | Expected | Actual | Status |
