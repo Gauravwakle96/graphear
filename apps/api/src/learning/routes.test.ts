@@ -15,6 +15,8 @@ let server: Server, base: string, dir: string, service: LearningService;
 const store = new Store(':memory:');
 let calls = 0;
 let lastGeneration: Generation | undefined;
+let largeGeneration = false,
+  invalidRefinement = false;
 let invalidGeneration: 'none' | 'once' | 'always' | 'ungrounded-once' | 'ungrounded-always' =
   'none';
 // Dependency injection is confined to this test. No mock provider exists in runtime code.
@@ -23,6 +25,12 @@ const provider: AIProvider = {
   async generate(r: Generation) {
     calls++;
     lastGeneration = r;
+    if (r.name === 'source_diagram') {
+      const diagram = testAnalysis().diagrams[0];
+      diagram.title = 'Focused source diagram';
+      if (invalidRefinement) diagram.edges[0].target = 'missing';
+      return diagram;
+    }
     if (invalidGeneration === 'ungrounded-once' || invalidGeneration === 'ungrounded-always') {
       if (invalidGeneration === 'ungrounded-once') invalidGeneration = 'none';
       const invalid = testAnalysis();
@@ -43,7 +51,13 @@ const provider: AIProvider = {
         diagram: null,
       };
     if (r.name === 'practice_questions') return { questions: testAnalysis().questions };
-    return testAnalysis();
+    const analysis = testAnalysis();
+    if (largeGeneration)
+      analysis.notes.detailed = Array.from({ length: 6 }, (_, i) => ({
+        heading: `Synthetic section ${i + 1}`,
+        items: [...analysis.notes.detailed[0].items, ...analysis.notes.detailed[0].items],
+      }));
+    return analysis;
   },
   async transcribe() {
     return 'Test only';
@@ -292,6 +306,63 @@ describe('private learning API and durable jobs', () => {
         ).status,
       ).toBe(404);
   });
+  it('checks cited document figures and keeps valid notes when a reconstruction is invalid or over budget', async () => {
+    const previousBudget = service.config.jobCalls;
+    try {
+      largeGeneration = true;
+      const asset = join(dir, 'figure-review.jpg');
+      await writeFile(
+        asset,
+        await sharp({ create: { width: 20, height: 20, channels: 3, background: 'white' } })
+          .jpeg()
+          .toBuffer(),
+      );
+      for (const mode of ['valid', 'invalid', 'budget'] as const) {
+        invalidRefinement = mode === 'invalid';
+        service.config.jobCalls = mode === 'budget' ? 1 : 12;
+        const g = await guest(),
+          draft = await create(g, false);
+        const owner = String(
+          store.db.prepare('SELECT owner FROM learning_sessions WHERE id=?').get(draft.id)!.owner,
+        );
+        const current = service.store.get(owner, draft.id)!;
+        current.sources = Array.from({ length: 5 }, (_, i) => ({
+          id: `text${i}`,
+          reference: `Page ${i + 1}`,
+          kind: 'page' as const,
+          text: 'A client sends a request to a server. '.repeat(50),
+          page: i + 1,
+          start: null,
+          end: null,
+          asset: i === 0 ? asset : null,
+        }));
+        service.store.write(current);
+        const before = calls;
+        expect(
+          (
+            await fetch(base + `/api/learning/${draft.id}/process`, {
+              method: 'POST',
+              headers: headers(g),
+            })
+          ).status,
+        ).toBe(200);
+        const ready = await done(g, draft.id);
+        expect(ready.status).toBe('completed');
+        expect(ready.analysis.notes.detailed).toHaveLength(6);
+        if (mode === 'valid')
+          expect(ready.analysis.diagrams[0].title).toBe('Focused source diagram');
+        else {
+          expect(ready.analysis.diagrams).toEqual([]);
+          expect(ready.analysis.warnings.join(' ')).toContain('omitted');
+        }
+        expect(calls - before).toBe(mode === 'budget' ? 1 : 2);
+      }
+    } finally {
+      largeGeneration = false;
+      invalidRefinement = false;
+      service.config.jobCalls = previousBudget;
+    }
+  });
   it('rejects stale changes and invalid AI references before rendering', async () => {
     const g = await guest(),
       s = await create(g),
@@ -375,6 +446,36 @@ describe('private learning API and durable jobs', () => {
       expect(failed.analysis).toBeNull();
       expect(calls - next).toBe(2);
     } finally {
+      invalidGeneration = 'none';
+    }
+  });
+  it('makes Gemini structural correction explicit and never loops after invalid correction', async () => {
+    const previousProvider = service.config.provider;
+    const previousRepair = service.config.geminiRepairInvalidJSON;
+    const previousKey = service.config.geminiKey;
+    try {
+      service.config.provider = 'gemini';
+      service.config.geminiKey = 'test-only-key';
+      const g = await guest();
+      for (const [enabled, invalid, expectedCalls, expectedStatus] of [
+        [false, 'once', 1, 'failed'],
+        [true, 'once', 2, 'completed'],
+        [true, 'always', 2, 'failed'],
+        [true, 'ungrounded-always', 2, 'failed'],
+      ] as const) {
+        service.config.geminiRepairInvalidJSON = enabled;
+        invalidGeneration = invalid;
+        const before = calls;
+        const session = await create(g);
+        const result = await done(g, session.id);
+        expect(result.status).toBe(expectedStatus);
+        expect(calls - before).toBe(expectedCalls);
+        if (expectedStatus === 'failed') expect(result.analysis).toBeNull();
+      }
+    } finally {
+      service.config.provider = previousProvider;
+      service.config.geminiKey = previousKey;
+      service.config.geminiRepairInvalidJSON = previousRepair;
       invalidGeneration = 'none';
     }
   });

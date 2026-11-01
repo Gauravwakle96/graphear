@@ -14,6 +14,7 @@ export type AIConfig = {
   model: string;
   transcriptionModel: string;
   geminiThinkingBudget?: number;
+  geminiRepairInvalidJSON: boolean;
   freeTier: boolean;
   timeoutMs: number;
   dailyCalls: number;
@@ -62,7 +63,7 @@ export function aiConfig(): AIConfig {
     compatibleRepairInvalidJSON: process.env.COMPATIBLE_REPAIR_INVALID_JSON === '1',
     model:
       provider === 'gemini'
-        ? (process.env.GEMINI_MODEL ?? 'gemini-3.8-flash')
+        ? (process.env.GEMINI_MODEL ?? 'gemini-3.1-flash-lite')
         : provider === 'compatible'
           ? (process.env.COMPATIBLE_MODEL?.trim() ?? '')
           : (process.env.OPENAI_MODEL ?? 'gpt-6-astra'),
@@ -73,6 +74,7 @@ export function aiConfig(): AIConfig {
     geminiThinkingBudget: process.env.GEMINI_THINKING_BUDGET?.trim()
       ? limit('GEMINI_THINKING_BUDGET', 0, 0, 32768)
       : undefined,
+    geminiRepairInvalidJSON: process.env.GEMINI_REPAIR_INVALID_JSON === '1',
     timeoutMs: limit('AI_TIMEOUT_SECONDS', 120, 10, 300) * 1000,
     dailyCalls: limit('AI_DAILY_CALL_LIMIT', 50, 1, 1000),
     jobCalls: limit('AI_JOB_CALL_LIMIT', 12, 1, 30),

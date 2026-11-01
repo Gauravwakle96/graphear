@@ -3,8 +3,9 @@
 The chosen deployment runs the complete production build and backend on the
 existing Windows laptop. Private SQLite data and uploads persist on its disk;
 Cloudflare Quick Tunnel provides a public HTTPS address without an account or
-domain. No paid service is provisioned. The current backend uses the supplied
-local FreeLLMAPI gateway and configured free upstream routes. Requests remain
+domain. No paid service is provisioned. The current backend uses Gemini 3.1 Flash
+Lite and its existing key/free allowance. Saved gateway settings remain private
+for rollback; no paid fallback is enabled. Requests remain
 quota-limited and fail visibly when the provider cannot return validated output.
 
 **This is a temporary hackathon demo.** The laptop, network connection and tunnel
@@ -18,9 +19,9 @@ needs an appropriate hosting account and persistent storage.
 1. Install Node 24 and FFmpeg/FFprobe. Install the project's locked dependencies
    with npm ci and prepare the OCR assets with npm run prepare:ocr.
 2. Configure the ignored backend .env without replacing existing credentials.
-   Follow the compatible-provider example in [AI_LEARNING.md](AI_LEARNING.md),
-   or explicitly select another account with free quota. Keep FreeLLMAPI running
-   on the same computer when its URL is localhost. Never put secrets in VITE_*
+   Follow the tested Gemini example in [AI_LEARNING.md](AI_LEARNING.md),
+   or explicitly select another account with free quota. When using the optional
+   FreeLLMAPI adapter, keep its gateway running on the backend computer. Never put secrets in VITE_*
    variables, GitHub comments or the repository. Model discovery and availability
    booleans do not prove a generation will succeed.
 3. Install Cloudflare's official cloudflared binary. This workspace uses the
@@ -93,14 +94,15 @@ with file-directed logs. Its URL and owned PIDs are in the ignored deployment
 state. The first reload lost the old tunnel; guest cookies from that hostname do
 not transfer automatically. Saved database records and files were retained, and
 the original learning record was compared against its protected backup. The
-compatible-provider deployment retained the current hostname. Public draft,
+compatible-provider and subsequent Gemini deployments retained the current hostname. Public draft,
 TXT/subtitle upload, transcript attachment and mobile/desktop checks passed;
 the original saved learning record's digest was unchanged after those checks.
 
 Current demo limits are 20 MB per upload, five-minute recordings and 20 reserved
 AI calls per application day. Failed requests and corrections consume the call
 budget. These conservative demo limits differ from the larger defaults in
-`.env.example`. A quota-free gateway is not established. Live video generation
+`.env.example`. Both saved PDFs and a public text lesson succeeded with Gemini.
+No quota-free provider is established. Live Gemini video generation
 has not yet passed; see [the release report](RELEASE_VERIFICATION.md).
 
 ## Docker on an existing host

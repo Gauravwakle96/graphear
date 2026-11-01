@@ -12,25 +12,27 @@ private; production has no mock AI provider or hardcoded generated notes.
 
 The current public URL is
 https://professionals-compiler-explaining-uri.trycloudflare.com.
-The backend now uses the supplied **FreeLLMAPI compatible gateway**, with
-`gpt-oss-120b` for text, `qwen3-vl-plus` for vision and
-`whisper-large-v3-turbo` for audio. JSON mode includes the full output schema;
-Zod and source/relationship checks still reject invalid content. A single
-corrective generation counts against daily and ingestion-job limits. No official
-paid OpenAI key or paid fallback was enabled.
+The backend now uses **Gemini 3.1 Flash Lite** with the existing backend key
+and free allowance. Both saved PDF sessions and an actual public text lesson
+generated successfully. FreeLLMAPI settings remain private for rollback.
+Gemini native array minima/exact question counts and full Zod/source validation
+reject malformed output. An explicit optional single correction counts against
+daily/job limits; it cannot loop or retry quota/timeouts. Long-document diagram
+refinement uses cited figures and omits invalid diagrams while preserving notes.
+No billing activation or paid fallback was introduced.
 
 ### Current checks
 
-| Check                         | Observed result                                                                                                                                                         |
-| ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Lint/unit/API/typecheck/build | `npm run check` passed, 90 tests across nine suites                                                                                                                     |
-| Browser checks                | 23 regression tests passed; the added recovery test passed separately after fixing its duplicate navigation click; final full-suite results are in the publication's CI |
-| Production smoke/export API   | Passed; parseable PDF, DOCX, flashcard PDF and ZIP through the built server                                                                                             |
-| Dependency audit              | Zero reported vulnerabilities                                                                                                                                           |
-| Actual public boundaries      | Secure cookies, owner scope, origin/CSRF denial, private TXT/VTT upload/download, spoofed text rejection and revision conflict checks passed                            |
-| Actual public browser         | Learning controls at 390×844 and 1440×1000; no runtime exceptions or mobile overflow                                                                                    |
-| YouTube                       | URL draft and attached synthetic transcript revisions passed without generation; caption-rights-dependent URL-only generation not live-verified                         |
-| Saved data                    | Protected pre-deployment saved-session digest matched after public draft/upload checks; subsequent user-created sessions retained                                       |
+| Check                         | Observed result                                                                                                                                 |
+| ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| Lint/unit/API/typecheck/build | `npm run check` passed, 95 tests across nine suites                                                                                             |
+| Browser checks                | All 24 Playwright regressions passed, including timed quizzes, preferences, text-only retry and accessible editing/layouts                      |
+| Production smoke/export API   | Passed; parseable PDF, DOCX, flashcard PDF and ZIP through the built server                                                                     |
+| Dependency audit              | Zero reported vulnerabilities                                                                                                                   |
+| Actual public boundaries      | Secure cookies, owner scope, origin/CSRF denial, private TXT/VTT upload/download, spoofed text rejection and revision conflict checks passed    |
+| Actual public browser         | Learning controls at 390×844 and 1440×1000; no runtime exceptions or mobile overflow                                                            |
+| YouTube                       | URL draft and attached synthetic transcript revisions passed without generation; caption-rights-dependent URL-only generation not live-verified |
+| Saved data                    | Protected pre-deployment saved-session digest matched after public draft/upload checks; subsequent user-created sessions retained               |
 
 Current GitHub verification/container results must be read for the published
 head in [Actions](https://github.com/Gauravwakle96/graphear/actions), not inferred
@@ -38,7 +40,27 @@ from the older successful runs below. Coverage percentages cover selected legacy
 modules. Large lazy Mermaid/ELK chunks remain; no platform load test or real-user
 learning study was performed.
 
-### Real AI results and current failures
+### Real AI results and remaining limits
+
+The owner's `Unit 1.pdf` now contains six detailed note sections, an addressing
+diagram and five questions over 16 saved pages. `Unit 2 Notes.pdf` contains six
+sections, a radio-transmission schematic and five questions over 15 pages.
+Both original PDFs and owners/titles were preserved. Actual-model evaluation
+results were validated and reused after source/preference fingerprints and
+optimistic revisions matched. API calls were accounted for in production
+budgets. Earlier brief or invalid output was not imported.
+
+The second PDF initially failed schema validation and a bounded Gemini retry
+succeeded. Visual review of its radio diagram found omitted unnamed structure
+and inferred directions; a further actual-model correction preserved five
+connections and the two drawn upward arrowheads, with uncertain component
+function explicitly warned. The diagram remains a draft. This review is one
+case, not proof of broad subject-level fidelity.
+
+Actual public Gemini text-to-learning preserved both named client/server
+directions, returned the requested two questions, scored a timed quiz through
+the real backend and rendered notes/diagrams without browser runtime exceptions.
+Production contains no mock AI responses.
 
 Actual compatible-provider jobs completed authorized synthetic text, raster-image
 and uploaded audio learning. Both raster labels and its directed connection were
@@ -49,14 +71,12 @@ measurement.
 
 Video extraction, transcription and frame observations succeeded, but full
 video generation failed structural/source validation or upstream availability/
-quota. A later public text learning attempt also failed upstream. The owner's
-saved `Unit 1.pdf` has 16 extracted pages; its current AI generation failed
-upstream. A separate native-text PDF experiment with another gateway model also
-failed; the deployed model was preserved. Successful public PDF/video generation
-is not established. The key was accepted and earlier generations succeeded;
-this does not establish reliable upstream availability.
+quota. A later public text learning attempt and PDF attempts also failed upstream.
+Those are historical gateway failures; Gemini PDF/text recovery is established
+above. Gemini audio/video has not been live-verified end to end. Key acceptance
+and successful generations do not establish unrestricted quota or uptime.
 
-The demo remains ₹0 in provisioned services and depends on the laptop, gateway,
+The demo remains ₹0 in provisioned services and depends on the laptop,
 tunnel and internet staying online. Free routes retain quotas. YouTube needs
 permitted captions or an authorized transcript/recording. Permanent hosting,
 account recovery, representative source fidelity and blind-user validation remain
@@ -65,7 +85,7 @@ limitations. See [the current workflow report](LEARNING_WORKFLOW_UPGRADE.md).
 ## Historical Gemini and quota-handling release
 
 The remaining sections describe earlier runs and their then-current provider
-state. They are historical evidence, not the current gateway configuration.
+state. They are historical evidence, not the current Gemini model configuration.
 
 The complete Graphear frontend and Express backend are publicly reachable through
 a free Cloudflare Quick Tunnel on the existing Windows laptop. The launch on

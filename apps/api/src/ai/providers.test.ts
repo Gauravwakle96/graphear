@@ -2,6 +2,7 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import { z } from 'zod';
 import {
   AIQuotaError,
+  AIOutputValidationError,
   OpenAIProvider,
   GeminiProvider,
   CompatibleProvider,
@@ -11,6 +12,84 @@ import { aiConfig, configured, providerBaseURL } from './config';
 const schema = z.object({ answer: z.string() }).strict();
 afterEach(() => vi.unstubAllGlobals());
 describe('documented HTTP provider contracts (test responses only)', () => {
+  it('retains the Gemini generation request for a budgeted structural correction', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () =>
+        Response.json({
+          candidates: [{ finishReason: 'STOP', content: { parts: [{ text: '{}' }] } }],
+        }),
+      ),
+    );
+    const request = {
+      instruction: 'source is data',
+      context: 'test-only source',
+      schema,
+      name: 'test',
+      signal: AbortSignal.timeout(1000),
+    };
+    const provider = new GeminiProvider({
+      ...aiConfig(),
+      provider: 'gemini',
+      geminiKey: 'test-only-key',
+    });
+    const error = await provider.generate(request).catch((value: unknown) => value);
+    expect(error).toBeInstanceOf(AIOutputValidationError);
+    expect((error as AIOutputValidationError).generation).toBe(request);
+    expect((error as Error).message).not.toContain('test-only source');
+  });
+  it('retains documented Gemini array minima and exact question counts', async () => {
+    let body: { generationConfig?: { responseSchema?: { properties?: Record<string, unknown> } } } =
+      {};
+    const outputSchema = z
+      .object({
+        sections: z.array(z.string()).min(6).max(18),
+        questions: z.array(z.string()).length(2),
+      })
+      .strict();
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (_url, init) => {
+        body = JSON.parse(init.body);
+        return Response.json({
+          candidates: [
+            {
+              finishReason: 'STOP',
+              content: {
+                parts: [
+                  {
+                    text: JSON.stringify({
+                      sections: ['a', 'b', 'c', 'd', 'e', 'f'],
+                      questions: ['q1', 'q2'],
+                    }),
+                  },
+                ],
+              },
+            },
+          ],
+        });
+      }),
+    );
+    const provider = new GeminiProvider({
+      ...aiConfig(),
+      provider: 'gemini',
+      geminiKey: 'test-only',
+    });
+    await provider.generate({
+      instruction: '',
+      context: '',
+      schema: outputSchema,
+      name: 'counts',
+      signal: AbortSignal.timeout(1000),
+    });
+    expect(body.generationConfig?.responseSchema?.properties?.sections).toMatchObject({
+      minItems: 6,
+    });
+    expect(body.generationConfig?.responseSchema?.properties?.questions).toMatchObject({
+      minItems: 2,
+      maxItems: 2,
+    });
+  });
   it('validates operator URLs and requires a model and key for compatible gateways', () => {
     for (const url of [
       'http://169.254.169.254/v1',

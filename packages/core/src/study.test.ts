@@ -1,8 +1,33 @@
 import { describe, it, expect } from 'vitest';
-import { validateAnalysis, validateDiagram, validateTutor, gradeStudyTest } from './study';
+import {
+  validateAnalysis,
+  validateDiagram,
+  validateTutor,
+  gradeStudyTest,
+  studyGenerationSchema,
+} from './study';
 import { studyMermaid, studySvg } from './study-render';
 import { testSources, testAnalysis, testDiagram } from './study.test-support';
 describe('learning data trust boundary', () => {
+  it('requires requested question counts and substantial study notes without restricting manual edits', () => {
+    const options = {
+      consent: true as const,
+      subject: 'Networks',
+      difficulty: 'easy' as const,
+      questionCount: 2,
+      noteStyle: 'detailed' as const,
+    };
+    expect(studyGenerationSchema(options, testSources).safeParse(testAnalysis()).success).toBe(
+      false,
+    );
+    const large = Array.from({ length: 5 }, () => ({
+      ...testSources[0],
+      text: 'Educational source material. '.repeat(60),
+    }));
+    const minimum = studyGenerationSchema({ ...options, questionCount: 1 }, large);
+    expect(minimum.safeParse(testAnalysis()).success).toBe(false);
+    expect(validateAnalysis(testAnalysis(), testSources)).toBeTruthy();
+  });
   it('grades choices on the server rules and retains written-answer self-review', () => {
     const choice = testAnalysis().questions[0];
     const written = { ...choice, id: 'written', kind: 'short' as const, options: [] };

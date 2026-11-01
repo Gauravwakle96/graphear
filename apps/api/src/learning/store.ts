@@ -216,14 +216,14 @@ export class LearningStore {
       const job = Number(
         this.base.db
           .prepare(
-            "SELECT COUNT(*) AS n FROM learning_calls WHERE session=? AND task IN ('analysis','ocr','transcription','analysis:repair','ocr:repair','transcription:repair')",
+            "SELECT COUNT(*) AS n FROM learning_calls WHERE session=? AND task IN ('analysis','ocr','transcription','diagram','analysis:repair','ocr:repair','transcription:repair','diagram:repair')",
           )
           .get(session)?.n ?? 0,
       );
       if (
         total >= dailyLimit ||
         user >= Math.min(25, dailyLimit) ||
-        (['analysis', 'ocr', 'transcription'].includes(task.replace(/:repair$/, '')) &&
+        (['analysis', 'ocr', 'transcription', 'diagram'].includes(task.replace(/:repair$/, '')) &&
           job >= jobLimit)
       )
         throw new Error(

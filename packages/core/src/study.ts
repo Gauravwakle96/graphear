@@ -187,6 +187,21 @@ export type StudyNode = z.infer<typeof studyNodeSchema>;
 export type StudyOptions = z.infer<typeof optionsSchema>;
 export type StudyQuestion = z.infer<typeof questionSchema>;
 export type TutorAnswer = z.infer<typeof tutorSchema>;
+export function studyGenerationSchema(options: StudyOptions, sources: Source[]) {
+  const substantial =
+    sources.length >= 5 && sources.reduce((n, src) => n + src.text.length, 0) >= 6000;
+  return analysisSchema.extend({
+    notes: substantial
+      ? analysisSchema.shape.notes.extend({
+          detailed: z
+            .array(section.extend({ items: section.shape.items.min(2) }))
+            .min(6)
+            .max(18),
+        })
+      : analysisSchema.shape.notes,
+    questions: z.array(questionSchema).length(options.questionCount),
+  });
+}
 export const quizSubmissionSchema = z
   .object({
     answers: z.record(z.string().max(80), z.string().max(4000)),

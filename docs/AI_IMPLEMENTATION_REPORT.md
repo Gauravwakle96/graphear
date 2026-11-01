@@ -6,12 +6,21 @@ legacy local OCR, graph exploration, repair, sharing and exports were preserved.
 The inspected design and architecture are recorded in
 [the implementation plan](AI_IMPLEMENTATION_PLAN.md).
 
-**The current free HTTPS demo uses FreeLLMAPI.** Real text, image and audio
-learning jobs succeeded on bounded synthetic sources. Video extraction worked,
-but live generation failed validation or upstream availability/quota. YouTube
+**The current free HTTPS demo uses Gemini 3.1 Flash Lite.** Actual Gemini
+generation recovered both saved PDF sessions with six detailed note sections,
+a source-linked draft diagram and five questions each. A public text lesson
+preserved both request/response directions, rendered notes/diagrams and passed
+timed-quiz scoring. Earlier FreeLLMAPI text, image and audio learning succeeded;
+video extraction worked but full generation failed validation or availability.
+Gemini audio/video remains unverified end to end. YouTube
 needs permitted captions or an authorized supplied transcript/recording.
 The latest increment adds uploaded text/subtitles, learner preferences, saved
 YouTube transcript drafts, timed tests and source-topic revision feedback.
+Generation now enforces requested question counts and broader long-document
+notes, checks cited figures in focused requests, and supports an explicit single
+Gemini correction within call budgets. Invalid figures are omitted with a warning
+while validated notes remain available. Billing was not activated and no paid
+fallback was introduced.
 See [the current workflow report](LEARNING_WORKFLOW_UPGRADE.md).
 The historical initial implementation checks below are supplemented by
 [the release report](RELEASE_VERIFICATION.md), including actual live results,

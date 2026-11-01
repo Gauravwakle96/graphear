@@ -2,11 +2,13 @@ import { z } from 'zod';
 import { readFile } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
 import {
-  analysisSchema,
+  studyGenerationSchema,
   tutorSchema,
   questionSchema,
   validateAnalysis,
   validateTutor,
+  validateDiagram,
+  studyDiagramSchema,
   type Source,
   type StudyAnalysis,
   type StudyOptions,
@@ -108,6 +110,12 @@ export class LearningService {
     if (this.activeId === id) await this.running;
     await this.actions.get(id)?.catch(() => undefined);
   }
+  private repairsEnabled() {
+    return (
+      (this.config.provider === 'compatible' && this.config.compatibleRepairInvalidJSON) ||
+      (this.config.provider === 'gemini' && this.config.geminiRepairInvalidJSON)
+    );
+  }
   private async call<T>(
     s: LearningSession,
     task: string,
@@ -138,8 +146,7 @@ export class LearningService {
       if (
         error instanceof AIOutputValidationError &&
         error.generation &&
-        this.config.provider === 'compatible' &&
-        this.config.compatibleRepairInvalidJSON &&
+        this.repairsEnabled() &&
         !task.endsWith(':repair')
       ) {
         const request = error.generation;
@@ -317,7 +324,9 @@ export class LearningService {
               needsOCR.some((v) => v.sourceId === img.sourceId)),
           );
         });
-      const request = `Subject: ${s.options.subject}. Difficulty: ${s.options.difficulty}. Generate ${s.options.questionCount} mixed questions and useful flashcards. Detailed notes: introduction, definitions, concepts, components, working principles, step-by-step explanation, examples/applications only if grounded or explicitly additional, and conclusion. Short notes: key definitions and revision points. Exam notes: source-grounded 2/5/10-mark answer guidance and important questions; do not claim frequency without evidence. Generate up to 3 appropriate diagram types. Include source-grounded tables or comparison charts when present; otherwise return an empty tables array. Topics and every factual note/relationship need source references. Images are in this order: ${sampled.map((i) => i.sourceId).join(', ')}. Warn about ambiguous/unreadable material and omitted figures.`;
+      const substantial =
+        s.sources.length >= 5 && s.sources.reduce((n, src) => n + src.text.length, 0) >= 6000;
+      const request = `Subject: ${s.options.subject}. Difficulty: ${s.options.difficulty}. Generate ${s.options.questionCount} mixed questions and useful flashcards. Detailed notes: introduction, definitions, concepts, components, working principles, step-by-step explanation, examples/applications only if grounded or explicitly additional, and conclusion. Short notes: key definitions and revision points. Exam notes: provide actual source-grounded 2/5/10-mark answer guidance, not just a list of questions; do not claim frequency without evidence. Generate up to 3 appropriate diagram types. A diagram must explain structure or relationships present in the source; do not substitute disconnected title-only nodes for a described layer hierarchy, process or taxonomy. Preserve the source-defined ordering and connections. Include source-grounded tables or comparison charts when present; otherwise return an empty tables array. Topics and every factual note/relationship need source references. Images are in this order: ${sampled.map((i) => i.sourceId).join(', ')}. Warn about ambiguous/unreadable material and omitted figures.${substantial ? ' This is substantial multi-section material: cover every major topic, not only the opening definitions. Provide at least six detailed sections with substantive, student-friendly explanations and source-linked definitions or steps. Short notes should support revision across those topics. Distinguish a topic overview from detailed study notes. Keep coverage broad and prose concise so the complete structured response fits the output limit.' : ''}`;
       const generated = await this.call(
         s,
         'analysis',
@@ -340,7 +349,7 @@ export class LearningService {
                 '. Preserve technical meaning and mark added explanations.',
             ),
             images: describedImages ? [] : sampled.map((i) => i.image),
-            schema: analysisSchema,
+            schema: studyGenerationSchema(s.options, s.sources),
             name: 'study_analysis',
             signal,
           };
@@ -348,7 +357,7 @@ export class LearningService {
           try {
             validateAnalysis(content, s.sources);
           } catch (error) {
-            if (this.config.provider === 'compatible' && this.config.compatibleRepairInvalidJSON)
+            if (this.repairsEnabled())
               throw new AIOutputValidationError(
                 content,
                 error instanceof z.ZodError
@@ -377,6 +386,61 @@ export class LearningService {
         throw new Error(
           'AI-generated notes or diagram relationships failed source validation. No generated result was saved.',
         );
+      }
+      // Long documents mix nearby captions and multiple figures. Recheck cited
+      // figures in a focused request instead of treating a broad summary as a
+      // faithful visual reconstruction. Keep validated notes if a figure fails.
+      if (substantial && !textOnly && extracted.images.length) {
+        const refined: StudyAnalysis['diagrams'] = [];
+        if (analysis.diagrams.length > 3)
+          analysis.warnings.push(
+            'Only the first three diagram drafts were checked in this bounded request; additional diagrams were omitted.',
+          );
+        for (const draft of analysis.diagrams.slice(0, 3)) {
+          const refs = new Set([...draft.nodes, ...draft.edges].flatMap((item) => item.evidence));
+          const figures = extracted.images.filter((img) => refs.has(img.sourceId)).slice(0, 3);
+          if (!figures.length) {
+            refined.push(draft);
+            continue;
+          }
+          const ids = new Set(figures.map((img) => img.sourceId));
+          update(85, 'Checking diagrams against their cited source figures');
+          try {
+            const result = await this.call(
+              s,
+              'diagram',
+              (signal) =>
+                this.provider.generate({
+                  name: 'source_diagram',
+                  schema: studyDiagramSchema,
+                  signal,
+                  instruction:
+                    rules +
+                    ' Reconstruct the diagram actually visible in these cited page images, not another figure referred to by nearby prose. Preserve every clear visible label, component, connection and direction. Do not invent names for unnamed or numbered layers. Represent clearly visible unlabeled shapes with a neutral placeholder and an uncertainty warning, rather than omitting their connections. Use drawn arrowheads to determine direction; a line without an arrowhead has direction none. Clearly warn about any direction inferred from text instead of the drawing. Treat ellipses and unclear regions as uncertainty. If this is a text-derived schematic rather than a visible figure, say so in its description and warnings. Use only these evidence IDs: ' +
+                    [...ids].join(', ') +
+                    '.',
+                  context: this.context(
+                    s.sources.filter((src) => ids.has(src.id)),
+                    'Check and replace this untrusted previous diagram draft against the cited source: ' +
+                      JSON.stringify(draft),
+                  ),
+                  images: figures.map((img) => img.image),
+                }),
+              controller.signal,
+            );
+            const diagram = validateDiagram(result, ids);
+            diagram.id = draft.id;
+            diagram.reviewed = false;
+            refined.push(diagram);
+          } catch (error) {
+            controller.signal.throwIfAborted();
+            analysis.warnings.push(
+              'A diagram was omitted because its visual reconstruction could not be validated. The notes and questions remain available; review the original figure.',
+            );
+            if (error instanceof AIQuotaError) break;
+          }
+        }
+        analysis.diagrams = refined;
       }
       analysis.warnings = [
         ...new Set([
@@ -466,7 +530,7 @@ export class LearningService {
           rules +
           ` Create exactly ${count} ${difficulty} practice questions, covering MCQ, true/false, fill-in, short and long answers where suitable. Every answer needs an explanation and source references.`,
         context: this.context(s.sources),
-        schema: questionBatch,
+        schema: questionBatch.extend({ questions: z.array(questionSchema).length(count) }),
         name: 'practice_questions',
         signal,
       }),

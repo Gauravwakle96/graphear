@@ -24,7 +24,9 @@ OPENAI_TRANSCRIPTION_MODEL=gpt-transcribe
 ```dotenv
 AI_PROVIDER=gemini
 GEMINI_API_KEY=your_backend_key
-GEMINI_MODEL=gemini-3.8-flash
+GEMINI_MODEL=gemini-3.1-flash-lite
+AI_FREE_TIER=1
+GEMINI_REPAIR_INVALID_JSON=1
 ```
 
 Restart the API after configuration. Model access depends on your provider
@@ -38,7 +40,19 @@ it does not disable billing at the provider. Known 429 cooldowns persist across
 backend restarts. The workspace shows an approximate reset, blocks additional
 AI requests during that cooldown, and lets students save drafts and download
 originals. Availability refresh makes no AI generation request. The current
-demo uses the supplied local FreeLLMAPI gateway; no paid fallback is configured.
+demo uses Gemini 3.1 Flash Lite with the existing backend key and free allowance;
+actual public generation and both saved PDF recoveries succeeded. No paid
+fallback is configured. FreeLLMAPI settings are retained privately for rollback.
+
+Gemini native structured output keeps array minima and exact requested question
+counts; full Zod validation still runs afterwards. With
+`GEMINI_REPAIR_INVALID_JSON=1`, one corrective generation may repair malformed
+structure or invalid source relationships, within the same daily/job budgets.
+It never retries quota/timeouts or loops after an invalid correction. Leave 0
+to disable that extra request. Long documents require broader detailed-note
+coverage and receive focused checks of up to three cited diagrams; failed figure
+checks omit that diagram with a warning while retaining validated notes/questions.
+These checks do not prove factual accuracy.
 
 ### Local FreeLLMAPI gateway
 
@@ -190,12 +204,18 @@ and have no account recovery. No learning-session public sharing endpoint exists
 
 ## Material limitations
 
-Real FreeLLMAPI text-to-learning, raster image-to-learning and uploaded
+Real Gemini 3.1 Flash Lite generation recovered the owner's 16-page and 15-page
+PDF sessions with six detailed sections, one source-linked draft diagram and
+five questions each. Actual public text-to-learning preserved both client/server
+directions and passed timed-quiz scoring and browser rendering. These bounded
+cases do not establish general PDF/diagram accuracy.
+
+Earlier FreeLLMAPI text-to-learning, raster image-to-learning and uploaded
 audio-to-learning jobs succeeded on authorized synthetic sources. Exact image
 labels and arrow direction were checked; audio questions were submitted and
 scored by the real API. Live video extraction and transcription succeeded, but
 generation failed validation or encountered upstream unavailability/quota.
-Video-to-notes is therefore not live-verified successfully. Representative
+Gemini audio/video generation has not been live-verified successfully. Representative
 handwriting and subject-level accuracy remain unverified. See
 [the workflow report](LEARNING_WORKFLOW_UPGRADE.md) and
 [the release report](RELEASE_VERIFICATION.md). Automated HTTP

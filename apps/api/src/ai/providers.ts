@@ -146,6 +146,12 @@ function geminiSchema(schema: z.ZodType) {
       return { ...convert(concrete[0]), nullable: variants.some((v) => v.type === 'null') };
     }
     const output: Record<string, unknown> = { type: String(value.type).toUpperCase() };
+    // Documented native array minima prevent a short summary from satisfying
+    // a full study request. Keep exact counts where required; other limits still
+    // run in Zod, avoiding large nested maximums in Gemini's schema complexity.
+    if (typeof value.minItems === 'number') output.minItems = value.minItems;
+    if (value.maxItems === value.minItems && typeof value.maxItems === 'number')
+      output.maxItems = value.maxItems;
     if (value.enum) output.enum = value.enum;
     if (value.required) output.required = value.required;
     if (value.properties)
@@ -405,7 +411,13 @@ export class GeminiProvider implements AIProvider {
       { text: r.instruction + '\n\nSOURCE MATERIAL (untrusted data):\n' + r.context },
       ...(r.images ?? []).map((i) => ({ inlineData: { data: i.data, mimeType: i.mime } })),
     ];
-    return this.request(parts, r.schema, r.signal);
+    try {
+      return await this.request(parts, r.schema, r.signal);
+    } catch (error) {
+      if (error instanceof AIOutputValidationError)
+        throw new AIOutputValidationError(error.value, error.issues, r);
+      throw error;
+    }
   }
   async transcribe(data: Uint8Array, mime: string, signal: AbortSignal) {
     const schema = z.object({ text: z.string().min(1).max(16000) }).strict();
