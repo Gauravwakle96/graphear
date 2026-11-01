@@ -65,9 +65,9 @@ npm run build
 npm start
 ```
 
-The Express process serves `dist/web` and `/api` on the same origin. Use a persistent SQLite volume and HTTPS reverse proxy for public deployment. Set `NODE_ENV=production`, `HOST=0.0.0.0` inside a container, and `ALLOWED_ORIGINS` to the exact public URL. Production session cookies are Secure. The server does not trust arbitrary proxy headers; rate limiting uses the socket address, so a reverse proxy shares a conservative IP quota unless carefully configured in code.
+The Express process serves `dist/web` and `/api` on the same origin. Use a persistent SQLite volume and HTTPS reverse proxy for public deployment. Set `NODE_ENV=production`, `HOST=0.0.0.0` inside a container, and `APP_PUBLIC_URL` or `ALLOWED_ORIGINS` to the exact public URL. Render's `RENDER_EXTERNAL_URL` is supported. Production session cookies are Secure. Proxy trust remains disabled by default; `PROXY_TRUST_HOPS=1` requires a verified single reverse proxy with no direct public access to the origin.
 
-`docker compose up --build` supplies a single service and persistent volume. Override `ALLOWED_ORIGINS` for your domain. Docker packaging is provided; consult the verification report to see whether a Docker build was actually run.
+`docker compose up --build` supplies a single service, runtime AI secrets from the ignored `.env`, and a persistent volume. A reviewed Render blueprint and release/backup instructions are in [deployment](docs/DEPLOYMENT.md). Consult the verification report for actual container and hosted verification results.
 
 No public deployment is provisioned automatically. The production service requires a long-lived Node host with writable storage; static-only hosting can serve the frontend but cannot provide the private workspace API. A backend outage leaves local saves and exports usable.
 

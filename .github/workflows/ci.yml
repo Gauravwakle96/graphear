@@ -12,12 +12,17 @@ jobs:
         with:
           node-version: '24'
           cache: npm
+      - name: Install media processing tools
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg
       - run: npm ci
       - run: npm run prepare:ocr
       - run: npm run check
       - run: npm audit --omit=dev
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
+        env:
+          CI: '1'
+      - run: npm run test:smoke
         env:
           CI: '1'
       - uses: actions/upload-artifact@v4
@@ -27,3 +32,21 @@ jobs:
           path: |
             playwright-report
             coverage
+  container:
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          load: true
+          tags: graphear:verify
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - run: node scripts/container-smoke.mjs

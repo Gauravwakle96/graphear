@@ -12,6 +12,15 @@ const child = spawn(process.execPath, ['dist/server.mjs'], {
     NODE_ENV: 'production',
     DATABASE_PATH: 'data/smoke.sqlite',
     ALLOWED_ORIGINS: origin,
+    GRAPHEAR_LOAD_ENV: '0',
+    APP_PUBLIC_URL: '',
+    RENDER_EXTERNAL_URL: '',
+    OPENAI_API_KEY: '',
+    GEMINI_API_KEY: '',
+    YOUTUBE_API_KEY: '',
+    YOUTUBE_OAUTH_TOKEN: '',
+    AI_PROVIDER: 'openai',
+    PROXY_TRUST_HOPS: '0',
   },
 });
 let browser;

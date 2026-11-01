@@ -5,6 +5,7 @@ export type AIConfig = {
   geminiKey: string;
   model: string;
   transcriptionModel: string;
+  geminiThinkingBudget?: number;
   timeoutMs: number;
   dailyCalls: number;
   jobCalls: number;
@@ -36,6 +37,9 @@ export function aiConfig(): AIConfig {
         ? (process.env.GEMINI_MODEL ?? 'gemini-3.8-flash')
         : (process.env.OPENAI_MODEL ?? 'gpt-6-astra'),
     transcriptionModel: process.env.OPENAI_TRANSCRIPTION_MODEL ?? 'gpt-transcribe',
+    geminiThinkingBudget: process.env.GEMINI_THINKING_BUDGET?.trim()
+      ? limit('GEMINI_THINKING_BUDGET', 0, 0, 32768)
+      : undefined,
     timeoutMs: limit('AI_TIMEOUT_SECONDS', 120, 10, 300) * 1000,
     dailyCalls: limit('AI_DAILY_CALL_LIMIT', 50, 1, 1000),
     jobCalls: limit('AI_JOB_CALL_LIMIT', 12, 1, 30),

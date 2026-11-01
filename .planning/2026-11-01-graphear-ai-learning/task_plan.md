@@ -4,10 +4,10 @@
 Extend the existing app with real configurable AI, private multimodal ingestion, source-linked learning workspaces and exports; verify actual behavior and report live-key limitations.
 
 ## Next Step
-Implementation delivered on feat/ai-learning-platform. Configure backend credentials and run authorized live source-fidelity evaluations before relying on generated learning material.
+Finish live AI verification and deployment packaging. Deploy to an authorized host with persistent storage and verify the hosted application.
 
 ## Current Phase
-Complete
+Phase 9
 
 ## Phases
 
@@ -52,6 +52,18 @@ Complete
 - [x] Review outputs and complete the scoped visual/documenter handoffs
 - [x] Deliver code and implementation report on GitHub; remote implementation commit verified
 - **Status:** complete
+
+### Phase 9: Live verification and release operations
+- [ ] Inspect available AI credentials and hosting access without exposing secrets
+- [ ] Finish secure deployment configuration, container verification and meaningful live tests
+- [ ] Document actual remaining blockers and results
+- **Status:** in_progress
+
+### Phase 10: Public deployment
+- [ ] Deploy a verified full-stack release with persistent storage and backend credentials
+- [ ] Verify HTTPS, private sessions and actual hosted learning workflows
+- [ ] Deliver the working URL and deployment report
+- **Status:** pending
 
 ## Decisions Made
 | Decision | Rationale |

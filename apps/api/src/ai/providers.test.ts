@@ -36,13 +36,17 @@ describe('documented HTTP provider contracts (test responses only)', () => {
     expect(new Headers(headers).get('Authorization')).toMatch(/^Bearer /);
     expect(JSON.stringify(request)).toContain('input_image');
   });
-  it('sends Gemini inline images and handles output_text', async () => {
+  it('sends Gemini inline images and JSON schemas through generateContent', async () => {
     let request: Record<string, unknown> = {};
+    let endpoint = '';
     vi.stubGlobal(
       'fetch',
       vi.fn(async (_url, init) => {
         request = JSON.parse(init.body);
-        return Response.json({ output_text: '{"answer":"ok"}' });
+        endpoint = String(_url);
+        return Response.json({
+          candidates: [{ finishReason: 'STOP', content: { parts: [{ text: '{"answer":"ok"}' }] } }],
+        });
       }),
     );
     const p = new GeminiProvider({ ...aiConfig(), provider: 'gemini', geminiKey: 'test-only-key' });
@@ -56,15 +60,65 @@ describe('documented HTTP provider contracts (test responses only)', () => {
         signal: AbortSignal.timeout(1000),
       }),
     ).toEqual({ answer: 'ok' });
-    expect(request.response_format).toMatchObject({ type: 'text', mime_type: 'application/json' });
-    expect(JSON.stringify(request)).toContain('mime_type');
-    expect(request.store).toBe(false);
+    expect(endpoint).toContain(':generateContent');
+    expect(request.generationConfig).toMatchObject({ responseMimeType: 'application/json' });
+    expect(JSON.stringify(request)).toContain('inlineData');
+    expect(JSON.stringify(request)).not.toContain('test-only-key');
+  });
+  it('rejects blocked and truncated Gemini output and transcribes inline audio', async () => {
+    const provider = new GeminiProvider({
+      ...aiConfig(),
+      provider: 'gemini',
+      geminiKey: 'test-only-key',
+    });
+    for (const response of [
+      Response.json({ promptFeedback: { blockReason: 'SAFETY' } }),
+      Response.json({
+        candidates: [
+          { finishReason: 'MAX_TOKENS', content: { parts: [{ text: '{"answer":"partial"}' }] } },
+        ],
+      }),
+    ]) {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async () => response),
+      );
+      await expect(
+        provider.generate({
+          instruction: '',
+          context: '',
+          schema,
+          name: 'test',
+          signal: AbortSignal.timeout(1000),
+        }),
+      ).rejects.toThrow();
+    }
+    let request: Record<string, unknown> = {};
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (_url, init) => {
+        request = JSON.parse(init.body);
+        return Response.json({
+          candidates: [
+            {
+              finishReason: 'STOP',
+              content: { parts: [{ text: '{"text":"The client sends a request."}' }] },
+            },
+          ],
+        });
+      }),
+    );
+    expect(
+      await provider.transcribe(new Uint8Array([1, 2]), 'audio/wav', AbortSignal.timeout(1000)),
+    ).toBe('The client sends a request.');
+    expect(JSON.stringify(request)).toContain('audio/wav');
   });
   it('handles refusal, invalid JSON, API quota and incomplete output without fabricating content', async () => {
     for (const response of [
       Response.json({ output: [{ content: [{ type: 'refusal' }] }] }),
       Response.json({ output_text: 'not JSON' }),
       Response.json({ error: 'private provider detail' }, { status: 429 }),
+      Response.json({ error: 'private provider detail' }, { status: 503 }),
       Response.json({ status: 'incomplete' }),
     ]) {
       vi.stubGlobal(

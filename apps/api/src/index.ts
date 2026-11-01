@@ -2,16 +2,15 @@ import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { createApp } from './app';
 import { Store } from './store';
-if (existsSync('.env')) process.loadEnvFile('.env');
-const port = Number(process.env.PORT ?? 3001);
-if (!Number.isInteger(port) || port < 1 || port > 65535)
-  throw new Error('PORT must be an integer between 1 and 65535.');
+import { runtimeConfig } from './runtime';
+if (process.env.GRAPHEAR_LOAD_ENV !== '0' && existsSync('.env')) process.loadEnvFile('.env');
+const runtime = runtimeConfig();
+const { port } = runtime;
 const store = new Store(resolve(process.env.DATABASE_PATH ?? 'data/graphear.sqlite'));
 const app = createApp(store, {
-  origins: process.env.ALLOWED_ORIGINS?.split(',')
-    .map((s) => s.trim())
-    .filter(Boolean),
-  production: process.env.NODE_ENV === 'production',
+  origins: runtime.origins,
+  production: runtime.production,
+  proxyHops: runtime.proxyHops,
   serveWeb: true,
 });
 const server = app.listen(port, process.env.HOST ?? '127.0.0.1', () =>

@@ -1,0 +1,37 @@
+services:
+  - type: web
+    name: graphear
+    runtime: docker
+    repo: https://github.com/Gauravwakle96/graphear
+    branch: feat/ai-learning-platform
+    plan: standard
+    numInstances: 1
+    autoDeployTrigger: checksPass
+    healthCheckPath: /api/health
+    disk:
+      name: graphear-private-data
+      mountPath: /app/data
+      sizeGB: 1
+    envVars:
+      - key: AI_PROVIDER
+        value: gemini
+      - key: GEMINI_MODEL
+        value: gemini-3.8-flash
+      - key: GEMINI_THINKING_BUDGET
+        value: '0'
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: DATABASE_PATH
+        value: /app/data/graphear.sqlite
+      - key: LEARNING_UPLOAD_DIR
+        value: /app/data/learning
+      - key: LEARNING_UPLOAD_MB
+        value: '20'
+      - key: LEARNING_MEDIA_MINUTES
+        value: '5'
+      - key: AI_DAILY_CALL_LIMIT
+        value: '50'
+      - key: AI_TIMEOUT_SECONDS
+        value: '120'
+      - key: PROXY_TRUST_HOPS
+        value: '0'

@@ -2,9 +2,31 @@ services:
   graphear:
     build: .
     ports:
-      - '3001:3001'
+      - '127.0.0.1:3001:3001'
     environment:
       ALLOWED_ORIGINS: '${ALLOWED_ORIGINS:-http://localhost:3001,http://127.0.0.1:3001}'
+      APP_PUBLIC_URL: '${APP_PUBLIC_URL:-}'
+      PROXY_TRUST_HOPS: '${PROXY_TRUST_HOPS:-0}'
+      AI_PROVIDER: '${AI_PROVIDER:-openai}'
+      OPENAI_API_KEY: '${OPENAI_API_KEY:-}'
+      OPENAI_MODEL: '${OPENAI_MODEL:-gpt-6-astra}'
+      OPENAI_TRANSCRIPTION_MODEL: '${OPENAI_TRANSCRIPTION_MODEL:-gpt-transcribe}'
+      GEMINI_API_KEY: '${GEMINI_API_KEY:-}'
+      GEMINI_MODEL: '${GEMINI_MODEL:-gemini-3.8-flash}'
+      GEMINI_THINKING_BUDGET: '${GEMINI_THINKING_BUDGET:-}'
+      AI_TIMEOUT_SECONDS: '${AI_TIMEOUT_SECONDS:-120}'
+      AI_DAILY_CALL_LIMIT: '${AI_DAILY_CALL_LIMIT:-50}'
+      AI_JOB_CALL_LIMIT: '${AI_JOB_CALL_LIMIT:-12}'
+      LEARNING_UPLOAD_MB: '${LEARNING_UPLOAD_MB:-100}'
+      LEARNING_MEDIA_MINUTES: '${LEARNING_MEDIA_MINUTES:-30}'
+      LEARNING_RETENTION_HOURS: '${LEARNING_RETENTION_HOURS:-168}'
+      LEARNING_UPLOAD_DIR: '/app/data/learning'
+      YOUTUBE_API_KEY: '${YOUTUBE_API_KEY:-}'
+      YOUTUBE_OAUTH_TOKEN: '${YOUTUBE_OAUTH_TOKEN:-}'
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
     volumes:
       - graphear-data:/app/data
     restart: unless-stopped

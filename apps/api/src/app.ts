@@ -40,11 +40,13 @@ export function createApp(
     origins?: string[];
     production?: boolean;
     serveWeb?: boolean;
+    proxyHops?: number;
     learning?: { config: AIConfig; provider?: AIProvider };
   } = {},
 ) {
   const app = express();
   app.disable('x-powered-by');
+  if (options.proxyHops === 1) app.set('trust proxy', 1);
   const production = options.production ?? false;
   const origins = new Set(
     options.origins ?? [
