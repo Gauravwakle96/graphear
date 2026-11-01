@@ -22,6 +22,7 @@ import {
   ZoomOut,
   ArrowRight,
   Wrench,
+  Sparkles,
   X,
 } from 'lucide-react';
 import {
@@ -88,6 +89,8 @@ export default function App() {
     [leaveLearning, setLeaveLearning] = useState<string | null>(null),
     [saved, setSaved] = useState<Saved | undefined>(),
     [image, setImage] = useState<string | undefined>('/examples/scholarship.svg'),
+    [aiSource, setAISource] = useState<File | null>(null),
+    [assistantOpen, setAssistantOpen] = useState(false),
     [notes, setNotes] = useState<string[]>([]),
     [theme, setTheme] = useState(initialTheme),
     [hidden, setHidden] = useState(false),
@@ -176,6 +179,24 @@ export default function App() {
     }
     window.location.hash = next;
     setPage(next);
+  };
+  const structureWithAI = () => {
+    if (!image || !/^data:image\/(png|jpeg|webp);base64,/.test(image)) return;
+    try {
+      const [header, encoded] = image.split(',');
+      const mime = header.slice(5, header.indexOf(';'));
+      const bytes = Uint8Array.from(atob(encoded), (c) => c.charCodeAt(0));
+      setAISource(
+        new File(
+          [bytes],
+          `${filename(graph.title)}.${mime === 'image/jpeg' ? 'jpg' : mime.split('/')[1]}`,
+          { type: mime },
+        ),
+      );
+      navigate('learning');
+    } catch {
+      setMessage('The source image could not be prepared. Reimport it and try again.');
+    }
   };
   const select = (id: string) => {
     setSelected(id);
@@ -443,7 +464,13 @@ export default function App() {
       <main id="main-content" className="main-content" tabIndex={-1}>
         {page === 'learning' ? (
           <Suspense fallback={<p role="status">Opening learning studio…</p>}>
-            <Learning onDirtyChange={setLearningDirty} />
+            <Learning
+              onDirtyChange={setLearningDirty}
+              initialFile={aiSource}
+              onInitialSourceUsed={() => setAISource(null)}
+              theme={theme}
+              onThemeChange={setTheme}
+            />
           </Suspense>
         ) : page === 'library' ? (
           <Library
@@ -545,6 +572,11 @@ export default function App() {
                 <Button variant="ghost" onClick={() => setMode('review')}>
                   Check source <ArrowRight size={16} aria-hidden="true" />
                 </Button>
+                {image?.startsWith('data:image/') && (
+                  <Button icon={Sparkles} onClick={() => void structureWithAI()}>
+                    Structure image with AI
+                  </Button>
+                )}
               </div>
             )}
             {mission && (
@@ -743,6 +775,11 @@ export default function App() {
                   onSelect={select}
                   onCommit={commit}
                   onEdit={() => setMode('edit')}
+                  onAI={
+                    image && /^data:image\/(png|jpeg|webp);base64,/.test(image)
+                      ? () => void structureWithAI()
+                      : undefined
+                  }
                 />
               ) : (
                 <Compare
@@ -959,6 +996,53 @@ export default function App() {
           )}
         </div>
       </Dialog>
+      {page !== 'learning' && !readonly && (
+        <>
+          <Button
+            className="workspace-ai-launcher"
+            icon={Sparkles}
+            aria-label="Open AI workspace assistant"
+            onClick={() => setAssistantOpen(true)}
+          >
+            AI
+          </Button>
+          <Dialog
+            open={assistantOpen}
+            title="Your AI workspace"
+            onClose={() => setAssistantOpen(false)}
+          >
+            <p>
+              Turn a source into an editable diagram, clear notes and practice. Choose how you want
+              the AI to explain it in Learning.
+            </p>
+            <div className="study-toolbar">
+              {image && /^data:image\/(png|jpeg|webp);base64,/.test(image) && (
+                <Button
+                  variant="primary"
+                  icon={Sparkles}
+                  onClick={() => {
+                    setAssistantOpen(false);
+                    void structureWithAI();
+                  }}
+                >
+                  Structure this image
+                </Button>
+              )}
+              <Button
+                onClick={() => {
+                  setAssistantOpen(false);
+                  navigate('learning');
+                }}
+              >
+                Open learning assistant
+              </Button>
+              <Button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}>
+                Switch to {theme === 'dark' ? 'light' : 'dark'} theme
+              </Button>
+            </div>
+          </Dialog>
+        </>
+      )}
       <Dialog
         open={leaveLearning !== null}
         title="Leave without saving?"

@@ -174,9 +174,10 @@ export function NotesView({
   disabled: boolean;
 }) {
   const [style, setStyle] = useState<'detailed' | 'short' | 'exam'>(initialStyle),
-    [editing, setEditing] = useState(false);
+    [editing, setEditing] = useState(false),
+    [reading, setReading] = useState('standard');
   return (
-    <article className="study-notes">
+    <article className={`study-notes reading-${reading}`}>
       <div className="study-toolbar">
         <div className="mode-switch" role="group" aria-label="Notes format">
           {(['detailed', 'short', 'exam'] as const).map((s) => (
@@ -190,39 +191,75 @@ export function NotesView({
         </Button>
       </div>
       <h2>{analysis.title}</h2>
+      <div className="study-toolbar">
+        <label>
+          Reading size
+          <select
+            aria-label="Reading size"
+            value={reading}
+            onChange={(e) => setReading(e.target.value)}
+          >
+            <option value="standard">Standard</option>
+            <option value="large">Large</option>
+            <option value="larger">Extra large</option>
+          </select>
+        </label>
+        <span className="muted">
+          {analysis.notes[style].length} sections · {sources.length} source references
+        </span>
+      </div>
       <p className="study-summary">{analysis.summary}</p>
+      <nav aria-label="Notes outline" className="study-outline">
+        {analysis.notes[style].map((s, i) => (
+          <a
+            key={i}
+            href={`#note-${style}-${i}`}
+            onClick={(e) => {
+              e.preventDefault();
+              document.getElementById(`note-${style}-${i}`)?.focus();
+              document.getElementById(`note-${style}-${i}`)?.scrollIntoView({ block: 'start' });
+            }}
+          >
+            {String(i + 1).padStart(2, '0')} {s.heading}
+          </a>
+        ))}
+      </nav>
       {analysis.notes[style].map((section, i) => (
         <section className="study-note-section" key={i}>
-          <h3>{section.heading}</h3>
-          {section.items.map((item, j) => (
-            <div className="study-note-item" key={j}>
-              {editing ? (
-                <label>
-                  Note {j + 1}
-                  <textarea
-                    value={item.text}
-                    maxLength={4000}
-                    rows={3}
-                    onChange={(e) => {
-                      const a = structuredClone(analysis);
-                      a.notes[style][i].items[j].text = e.target.value;
-                      onChange(a);
-                    }}
-                  />
-                </label>
-              ) : (
-                <p>{item.text}</p>
-              )}
-              {item.origin !== 'source' && (
-                <span className="badge warning">
-                  {item.origin === 'additional'
-                    ? 'Additional explanation'
-                    : 'Uncertain interpretation'}
-                </span>
-              )}
-              <Citations ids={item.evidence} sources={sources} onSource={onSource} />
-            </div>
-          ))}
+          <h3 id={`note-${style}-${i}`} tabIndex={-1}>
+            {section.heading}
+          </h3>
+          <ul className="study-note-points">
+            {section.items.map((item, j) => (
+              <li className="study-note-item" key={j}>
+                {editing ? (
+                  <label>
+                    Note {j + 1}
+                    <textarea
+                      value={item.text}
+                      maxLength={4000}
+                      rows={3}
+                      onChange={(e) => {
+                        const a = structuredClone(analysis);
+                        a.notes[style][i].items[j].text = e.target.value;
+                        onChange(a);
+                      }}
+                    />
+                  </label>
+                ) : (
+                  <p>{item.text}</p>
+                )}
+                {item.origin !== 'source' && (
+                  <span className="badge warning">
+                    {item.origin === 'additional'
+                      ? 'Additional explanation'
+                      : 'Uncertain interpretation'}
+                  </span>
+                )}
+                <Citations ids={item.evidence} sources={sources} onSource={onSource} />
+              </li>
+            ))}
+          </ul>
         </section>
       ))}
       {analysis.tables.map((t, i) => (

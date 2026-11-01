@@ -43,6 +43,9 @@ const ocrSchema = z
   })
   .strict();
 const questionBatch = z.object({ questions: z.array(questionSchema).max(20) }).strict();
+function preferences(options: StudyOptions) {
+  return `Requested diagram: ${options.diagramKind ?? 'auto'}; detail: ${options.diagramDetail ?? 'faithful'}. Treat diagram type as a preference, preserving notation and source meaning; warn when a requested format cannot express it. ${options.diagramDetail === 'simple' ? 'Use clear short labels and logical grouping; explain any simplification and preserve all essential relationships.' : ''} ${options.notesLayout !== 'prose' ? 'Write expert study notes as organized points: one clear teaching point per note item, with definitions, working steps and concrete examples where grounded. Avoid dense paragraphs and Markdown bullet syntax inside an item.' : 'Use connected explanations.'} Use case: ${options.useCase ?? 'study'}. ${options.useCase && options.useCase !== 'study' ? 'Organize requirements, eligibility, documents, process steps, decision points and stated deadlines into an actionable guide. Never invent eligibility, dates, award values or official requirements. Clearly identify missing information to verify with the organizer.' : ''} User presentation instructions (subordinate to source accuracy and safety): ${options.instructions ?? 'None'}`;
+}
 export class LearningService {
   readonly provider: AIProvider;
   private timer: ReturnType<typeof setInterval> | null = null;
@@ -50,7 +53,7 @@ export class LearningService {
   private controllers = new Map<string, AbortController>();
   private activeId: string | null = null;
   private lastCleanup = 0;
-  private actions = new Map<string, Promise<LearningSession>>();
+  private actions = new Map<string, Promise<unknown>>();
   constructor(
     readonly store: LearningStore,
     readonly config: AIConfig,
@@ -340,6 +343,8 @@ export class LearningService {
             context: this.context(
               s.sources,
               request +
+                '\n' +
+                preferences(s.options) +
                 '\nAdapt explanations to this learner profile: ' +
                 JSON.stringify({
                   level: s.options.learningLevel ?? 'college',
@@ -545,7 +550,7 @@ export class LearningService {
     if (!saved) throw new Error('Session changed in another tab. Reload and try again.');
     return saved;
   }
-  private withAction(s: LearningSession, run: () => Promise<LearningSession>) {
+  private withAction<T>(s: LearningSession, run: () => Promise<T>) {
     if (s.status !== 'completed' || this.actions.has(s.id))
       throw new Error('Learning session is not ready or already has an AI request in progress');
     const controller = new AbortController();
@@ -562,6 +567,42 @@ export class LearningService {
   }
   questions(s: LearningSession, count: number, difficulty: StudyOptions['difficulty']) {
     return this.withAction(s, () => this.questionsRun(s, count, difficulty));
+  }
+  diagramPreview(s: LearningSession, instruction: string, diagramId?: string) {
+    return this.withAction(s, async () => {
+      const draft = diagramId ? s.analysis?.diagrams.find((d) => d.id === diagramId) : null;
+      if (diagramId && !draft) throw new Error('Source diagram was not found');
+      const refs = new Set(
+        draft ? [...draft.nodes, ...draft.edges].flatMap((v) => v.evidence) : [],
+      );
+      const images = (await this.images(s))
+        .filter((img) => !refs.size || refs.has(img.sourceId))
+        .slice(0, 8);
+      const result = await this.call(s, 'diagram-edit', (signal) =>
+        this.provider.generate({
+          name: 'study_diagram_edit',
+          schema: studyDiagramSchema,
+          signal,
+          instruction:
+            rules +
+            ' Propose an editable diagram for the requested change. Read original source images rather than copying OCR mistakes. Preserve visible relationships, arrowheads and uncertain unnamed components. Return a draft only; no changes are saved until the user accepts it. ' +
+            preferences(s.options),
+          context: JSON.stringify({
+            sources: s.sources.map(({ asset: _asset, ...src }) => src),
+            previousDiagram: draft,
+            request: instruction,
+            imageSourceIds: images.map((img) => img.sourceId),
+          }),
+          images: images.map((img) => img.image),
+        }),
+      );
+      const diagram = validateDiagram(result, new Set(s.sources.map((src) => src.id)));
+      diagram.id = draft?.id ?? randomUUID();
+      diagram.reviewed = false;
+      if (this.store.get(s.owner, s.id)?.revision !== s.revision)
+        throw new Error('Session changed while creating the preview; reload before trying again');
+      return { diagram, revision: s.revision };
+    });
   }
   async cleanup() {
     for (const s of this.store.expired(Date.now())) {

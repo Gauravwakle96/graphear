@@ -5,10 +5,30 @@ import {
   validateTutor,
   gradeStudyTest,
   studyGenerationSchema,
+  optionsSchema,
 } from './study';
 import { studyMermaid, studySvg } from './study-render';
 import { testSources, testAnalysis, testDiagram } from './study.test-support';
 describe('learning data trust boundary', () => {
+  it('bounds custom preferences and retains older option records', () => {
+    expect(optionsSchema.parse({ consent: true }).diagramKind).toBeUndefined();
+    expect(
+      optionsSchema.parse({
+        consent: true,
+        diagramKind: 'network',
+        diagramDetail: 'simple',
+        notesLayout: 'bullets',
+        useCase: 'scholarship',
+        instructions: 'Explain eligibility',
+      }),
+    ).toMatchObject({ diagramKind: 'network', useCase: 'scholarship' });
+    expect(optionsSchema.safeParse({ consent: true, instructions: 'x'.repeat(2001) }).success).toBe(
+      false,
+    );
+    expect(optionsSchema.safeParse({ consent: true, diagramKind: 'execute-code' }).success).toBe(
+      false,
+    );
+  });
   it('requires requested question counts and substantial study notes without restricting manual edits', () => {
     const options = {
       consent: true as const,

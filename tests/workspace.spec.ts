@@ -172,6 +172,19 @@ test('real raster OCR yields a reviewable draft without uploading image pixels',
   });
   await expect(page.getByText(/geometric suggestions, not verified arrow/)).toBeVisible();
   expect(apiMutations).toEqual([]);
+  let uploads = 0;
+  page.on('request', (r) => {
+    if (r.url().endsWith('/api/learning') && r.method() === 'POST') uploads++;
+  });
+  await page.getByRole('button', { name: 'Open AI reconstruction', exact: true }).click();
+  await expect(page.getByText('Your original image is ready.', { exact: false })).toBeVisible();
+  await page.getByLabel('Diagram format', { exact: true }).selectOption('network');
+  await page.getByLabel('Diagram detail', { exact: true }).selectOption('simple');
+  await page
+    .getByLabel('Tell the AI what you need', { exact: true })
+    .fill('Keep every layer and label in order');
+  await expect(page.getByLabel(/I’m authorized/)).not.toBeChecked();
+  expect(uploads).toBe(0);
 });
 test('rejects invalid graph references and exports a portable learning pack', async ({ page }) => {
   const bad = { ...scholarshipGraph, edges: [{ ...scholarshipGraph.edges[0], target: 'missing' }] };

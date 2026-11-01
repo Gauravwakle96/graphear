@@ -21,18 +21,25 @@ daily/job limits; it cannot loop or retry quota/timeouts. Long-document diagram
 refinement uses cited figures and omits invalid diagrams while preserving notes.
 No billing activation or paid fallback was introduced.
 
+The latest [learning studio upgrade](AI_WORKSPACE_UPGRADE.md) adds the supplied
+NoteGPT-style converter/library layout, diagram format/detail, point-based notes,
+custom instructions, scholarship/hackathon/process guidance, on-device checklists
+and contextual AI diagram previews with explicit acceptance and saving. A local
+image handoff does not upload pixels before consent. The free demonstration now
+retains the 50-call application default; provider quotas still apply.
+
 ### Current checks
 
-| Check                         | Observed result                                                                                                                                 |
-| ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| Lint/unit/API/typecheck/build | `npm run check` passed, 95 tests across nine suites                                                                                             |
-| Browser checks                | All 24 Playwright regressions passed, including timed quizzes, preferences, text-only retry and accessible editing/layouts                      |
-| Production smoke/export API   | Passed; parseable PDF, DOCX, flashcard PDF and ZIP through the built server                                                                     |
-| Dependency audit              | Zero reported vulnerabilities                                                                                                                   |
-| Actual public boundaries      | Secure cookies, owner scope, origin/CSRF denial, private TXT/VTT upload/download, spoofed text rejection and revision conflict checks passed    |
-| Actual public browser         | Learning controls at 390×844 and 1440×1000; no runtime exceptions or mobile overflow                                                            |
-| YouTube                       | URL draft and attached synthetic transcript revisions passed without generation; caption-rights-dependent URL-only generation not live-verified |
-| Saved data                    | Protected pre-deployment saved-session digest matched after public draft/upload checks; subsequent user-created sessions retained               |
+| Check                         | Observed result                                                                                                                                    |
+| ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Lint/unit/API/typecheck/build | `npm run check` passed, 97 tests across nine suites                                                                                                |
+| Browser checks                | All 26 Playwright regressions passed, including AI preview acceptance, checklists, private image handoff, timed quizzes and accessible layouts     |
+| Production smoke/export API   | Passed; parseable PDF, DOCX, flashcard PDF and ZIP through the built server                                                                        |
+| Dependency audit              | Zero reported vulnerabilities                                                                                                                      |
+| Actual public boundaries      | Secure cookies, owner scope, origin/CSRF denial, private TXT/VTT upload/download, spoofed text rejection and revision conflict checks passed       |
+| Actual public browser         | New converter/assistant at 390, 820 and 1440 pixels in both themes; zero axe violations, overflow or runtime exceptions; no AI calls for UI checks |
+| YouTube                       | URL draft and attached synthetic transcript revisions passed without generation; caption-rights-dependent URL-only generation not live-verified    |
+| Saved data                    | Protected pre-deployment saved-session digest matched after public draft/upload checks; subsequent user-created sessions retained                  |
 
 Current GitHub verification/container results must be read for the published
 head in [Actions](https://github.com/Gauravwakle96/graphear/actions), not inferred
@@ -41,6 +48,14 @@ modules. Large lazy Mermaid/ELK chunks remain; no platform load test or real-use
 learning study was performed.
 
 ### Real AI results and remaining limits
+
+The latest actual public Gemini image test used an authorized synthetic OSI
+diagram. Reconstruction preserved all seven exact layer labels and all six
+downward directed connections, with two requested questions and stored output
+preferences. A subsequent real diagram-edit preview did not change the saved
+analysis or revision; explicitly saving the proposal succeeded. The synthetic
+test session was then deleted. This test does not establish fidelity for the
+different, unavailable OSI screenshot shown in chat.
 
 The owner's `Unit 1.pdf` now contains six detailed note sections, an addressing
 diagram and five questions over 16 saved pages. `Unit 2 Notes.pdf` contains six

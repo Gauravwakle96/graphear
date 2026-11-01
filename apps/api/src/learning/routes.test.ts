@@ -25,7 +25,7 @@ const provider: AIProvider = {
   async generate(r: Generation) {
     calls++;
     lastGeneration = r;
-    if (r.name === 'source_diagram') {
+    if (r.name === 'source_diagram' || r.name === 'study_diagram_edit') {
       const diagram = testAnalysis().diagrams[0];
       diagram.title = 'Focused source diagram';
       if (invalidRefinement) diagram.edges[0].target = 'missing';
@@ -129,6 +129,41 @@ async function done(g: Guest, id: string) {
   throw new Error('Job did not finish');
 }
 describe('private learning API and durable jobs', () => {
+  it('provides owner-scoped AI diagram previews without saving, and rejects stale or invalid proposals', async () => {
+    const g = await guest(),
+      other = await guest(),
+      s = await create(g),
+      ready = await done(g, s.id);
+    const request = (
+      owner: Guest,
+      revision = ready.revision,
+      instruction = 'Simplify this diagram while preserving relationships',
+    ) =>
+      fetch(base + `/api/learning/${s.id}/diagram-preview`, {
+        method: 'POST',
+        headers: { ...headers(owner), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ instruction, diagramId: ready.analysis.diagrams[0].id, revision }),
+      });
+    const before = calls;
+    expect((await request(other)).status).toBe(404);
+    expect((await request(g, ready.revision + 1)).status).toBe(409);
+    expect((await request(g, ready.revision, 'x'.repeat(2001))).status).toBe(400);
+    expect(calls).toBe(before);
+    const response = await request(g);
+    expect(response.status).toBe(200);
+    const preview = await response.json();
+    expect(preview.diagram.title).toBe('Focused source diagram');
+    expect(preview.diagram.id).toBe(ready.analysis.diagrams[0].id);
+    expect(preview.diagram.reviewed).toBe(false);
+    expect(await (await get(g, s.id)).json()).toEqual(ready);
+    try {
+      invalidRefinement = true;
+      expect((await request(g)).status).toBe(400);
+      expect(await (await get(g, s.id)).json()).toEqual(ready);
+    } finally {
+      invalidRefinement = false;
+    }
+  });
   it('saves timed-test results with unanswered choices and rejects client-supplied scores', async () => {
     const g = await guest(),
       session = await create(g);

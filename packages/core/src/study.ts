@@ -178,6 +178,11 @@ export const optionsSchema = z
     learningLevel: z.enum(['beginner', 'school', 'college', 'advanced']).optional(),
     learningGoal: z.enum(['understand', 'exam', 'revision']).optional(),
     visualAnalysis: z.boolean().optional(),
+    diagramKind: z.enum(['auto', ...categorySchema.options]).optional(),
+    diagramDetail: z.enum(['faithful', 'simple', 'expanded']).optional(),
+    notesLayout: z.enum(['bullets', 'prose']).optional(),
+    useCase: z.enum(['study', 'scholarship', 'hackathon', 'process']).optional(),
+    instructions: z.string().trim().max(2000).optional(),
   })
   .strict();
 export type Source = z.infer<typeof sourceSchema>;

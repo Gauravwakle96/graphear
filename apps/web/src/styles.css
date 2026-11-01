@@ -1,3 +1,28 @@
+.workspace-ai-launcher.button {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 30;
+  min-width: 64px;
+  min-height: 48px;
+  border-radius: 24px;
+  background: var(--accent);
+  color: var(--surface);
+  border: 1px solid var(--accent);
+  box-shadow: 0 6px 24px #00000020;
+}
+[data-theme='dark'] .workspace-ai-launcher.button {
+  color: var(--ground);
+}
+@media (max-width: 600px) {
+  .workspace-ai-launcher.button {
+    right: 16px;
+    bottom: 16px;
+  }
+  .learning-page {
+    padding-bottom: 90px;
+  }
+}
 :root {
   font-family: 'Manrope', sans-serif;
   color: #203b32;

@@ -1,5 +1,10 @@
 # AI learning implementation report
 
+The latest diagram reconstruction, NoteGPT-style learning studio, contextual AI
+preview and checklist changes are documented in [AI_WORKSPACE_UPGRADE.md](AI_WORKSPACE_UPGRADE.md).
+Current tests and actual Gemini evidence are in [RELEASE_VERIFICATION.md](RELEASE_VERIFICATION.md).
+The sections below retain earlier implementation evidence and its scope.
+
 Graphear now has a private AI Learning workspace alongside its existing accessible
 diagram application. React/TypeScript/Vite, Express and SQLite were retained;
 legacy local OCR, graph exploration, repair, sharing and exports were preserved.

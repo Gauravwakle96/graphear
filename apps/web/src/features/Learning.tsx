@@ -1,6 +1,17 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
-import { Upload, Plus, ArrowLeft, Save, Trash2, FileText, Download } from 'lucide-react';
-import { studyMarkdown, type StudyAnalysis } from '@graphear/core';
+import {
+  Upload,
+  Plus,
+  ArrowLeft,
+  Save,
+  Trash2,
+  FileText,
+  Download,
+  Video,
+  AudioLines,
+  Play,
+} from 'lucide-react';
+import { studyMarkdown, categorySchema, type StudyAnalysis } from '@graphear/core';
 import { Button, Dialog } from '../components/ui';
 import { download, filename } from '../lib/storage';
 import {
@@ -18,6 +29,8 @@ import {
 } from '../lib/learning-api';
 import { SourcesView, NotesView, TutorView, RevisionView } from './learning/StudyViews';
 import './learning/learning.css';
+import { WorkspaceAssistant } from './learning/WorkspaceAssistant';
+import { StudyChecklist } from './learning/StudyChecklist';
 const DiagramEditor = lazy(() =>
   import('./learning/DiagramEditor').then((m) => ({ default: m.DiagramEditor })),
 );
@@ -56,12 +69,15 @@ function Preview({ file }: { file: File | null }) {
 function UploadForm({
   config,
   onCreated,
+  initialFile,
 }: {
   config: LearningConfig | null;
   onCreated: (s: LearningSession) => void;
+  initialFile?: File | null;
 }) {
   const [kind, setKind] = useState<'file' | 'text' | 'youtube'>('file'),
-    [file, setFile] = useState<File | null>(null),
+    [fileCategory, setFileCategory] = useState('file'),
+    [file, setFile] = useState<File | null>(initialFile ?? null),
     [text, setText] = useState(''),
     [url, setUrl] = useState(''),
     [subject, setSubject] = useState('General education'),
@@ -70,6 +86,11 @@ function UploadForm({
     [noteStyle, setNoteStyle] = useState('detailed'),
     [difficulty, setDifficulty] = useState('medium'),
     [questionCount, setQuestionCount] = useState(5),
+    [diagramKind, setDiagramKind] = useState('auto'),
+    [diagramDetail, setDiagramDetail] = useState('faithful'),
+    [notesLayout, setNotesLayout] = useState('bullets'),
+    [useCase, setUseCase] = useState('study'),
+    [instructions, setInstructions] = useState(''),
     [consent, setConsent] = useState(false),
     [busy, setBusy] = useState(false),
     [progress, setProgress] = useState(0),
@@ -84,6 +105,14 @@ function UploadForm({
   function choose(f: File | undefined) {
     setError('');
     if (!f) return;
+    if (kind === 'file' && fileCategory === 'video' && !/\.(mp4|mov|webm|mkv)$/i.test(f.name)) {
+      setError('Choose a supported educational video.');
+      return;
+    }
+    if (kind === 'file' && fileCategory === 'audio' && !/\.(mp3|wav|m4a)$/i.test(f.name)) {
+      setError('Choose a supported educational recording.');
+      return;
+    }
     const ext = f.name.split('.').at(-1)?.toLowerCase();
     if (!accept.split(',').includes('.' + ext)) {
       setError(
@@ -121,6 +150,11 @@ function UploadForm({
           consent,
           difficulty,
           questionCount,
+          diagramKind,
+          diagramDetail,
+          notesLayout,
+          useCase,
+          instructions,
           noteStyle,
           learningLevel,
           learningGoal,
@@ -144,20 +178,50 @@ function UploadForm({
         Bring a diagram, document or recording. Keep the source beside your notes and check every
         reconstruction.
       </p>
+      {initialFile && (
+        <p className="notice">
+          Your original image is ready. Choose the output below and authorize private AI processing
+          to reconstruct it.
+        </p>
+      )}
       <div className="mode-switch" role="group" aria-label="Learning input">
-        {(['file', 'text', 'youtube'] as const).map((k) => (
-          <Button
-            key={k}
-            aria-pressed={kind === k}
-            onClick={() => {
-              setKind(k);
-              setError('');
-            }}
-            disabled={busy}
-          >
-            {k === 'file' ? 'Upload material' : k === 'text' ? 'Paste text' : 'YouTube video'}
-          </Button>
-        ))}
+        {(['file', 'video', 'audio', 'youtube', 'text'] as const).map((type) => {
+          const k = type === 'video' || type === 'audio' ? 'file' : type;
+          return (
+            <Button
+              key={type}
+              icon={
+                type === 'video'
+                  ? Video
+                  : type === 'audio'
+                    ? AudioLines
+                    : type === 'youtube'
+                      ? Play
+                      : type === 'file'
+                        ? Upload
+                        : FileText
+              }
+              aria-pressed={kind === k && (k !== 'file' || fileCategory === type)}
+              onClick={() => {
+                setKind(k);
+                if (k === 'file' && fileCategory !== type) setFile(null);
+                setFileCategory(type);
+                setError('');
+              }}
+              disabled={busy}
+            >
+              {type === 'video'
+                ? 'Video'
+                : type === 'audio'
+                  ? 'Audio'
+                  : k === 'file'
+                    ? 'Upload material'
+                    : k === 'text'
+                      ? 'Paste text'
+                      : 'YouTube video'}
+            </Button>
+          );
+        })}
       </div>
       <form
         onSubmit={(e) => {
@@ -175,7 +239,11 @@ function UploadForm({
               accept={
                 kind === 'youtube'
                   ? '.txt,.md,.vtt,.srt,.mp4,.mov,.webm,.mkv,.mp3,.wav,.m4a'
-                  : accept
+                  : fileCategory === 'video'
+                    ? '.mp4,.mov,.webm,.mkv'
+                    : fileCategory === 'audio'
+                      ? '.mp3,.wav,.m4a'
+                      : accept
               }
               disabled={busy}
               onChange={(e) => choose(e.target.files?.[0])}
@@ -196,7 +264,13 @@ function UploadForm({
               >
                 <Upload size={28} aria-hidden="true" />
                 <strong>Drop your learning material here</strong>
-                <p>Images, documents, video or audio</p>
+                <p>
+                  {fileCategory === 'video'
+                    ? 'Educational videos'
+                    : fileCategory === 'audio'
+                      ? 'Lectures and audio recordings'
+                      : 'PDFs, images, documents and notes'}
+                </p>
                 <Button type="button" onClick={() => input.current?.click()} disabled={busy}>
                   Choose a file
                 </Button>
@@ -286,6 +360,19 @@ function UploadForm({
         <fieldset className="study-learning-settings" disabled={busy}>
           <legend>Prepare this material for me</legend>
           <label>
+            Workspace purpose
+            <select
+              aria-label="Workspace purpose"
+              value={useCase}
+              onChange={(e) => setUseCase(e.target.value)}
+            >
+              <option value="study">Study and exam preparation</option>
+              <option value="scholarship">Scholarship application</option>
+              <option value="hackathon">Hackathon preparation</option>
+              <option value="process">Understand any process</option>
+            </select>
+          </label>
+          <label>
             Learning level
             <select
               aria-label="Learning level"
@@ -345,6 +432,62 @@ function UploadForm({
             />
           </label>
         </fieldset>
+        <fieldset className="study-learning-settings" disabled={busy}>
+          <legend>Shape your output</legend>
+          <label>
+            Diagram format
+            <select
+              aria-label="Diagram format"
+              value={diagramKind}
+              onChange={(e) => setDiagramKind(e.target.value)}
+            >
+              <option value="auto">Choose the best format</option>
+              {categorySchema.options.map((k) => (
+                <option key={k} value={k}>
+                  {k === 'mindmap'
+                    ? 'Mind map'
+                    : k === 'concept'
+                      ? 'Concept graph'
+                      : k.toUpperCase()}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Diagram detail
+            <select
+              aria-label="Diagram detail"
+              value={diagramDetail}
+              onChange={(e) => setDiagramDetail(e.target.value)}
+            >
+              <option value="faithful">Preserve original structure</option>
+              <option value="simple">Easy to understand</option>
+              <option value="expanded">Explain in more detail</option>
+            </select>
+          </label>
+          <label>
+            Notes presentation
+            <select
+              aria-label="Notes presentation"
+              value={notesLayout}
+              onChange={(e) => setNotesLayout(e.target.value)}
+            >
+              <option value="bullets">Expert notes in clear points</option>
+              <option value="prose">Connected explanations</option>
+            </select>
+          </label>
+          <label>
+            Tell the AI what you need
+            <textarea
+              aria-label="Tell the AI what you need"
+              rows={3}
+              maxLength={2000}
+              value={instructions}
+              onChange={(e) => setInstructions(e.target.value)}
+              placeholder="Explain the OSI layers simply, preserve their order and connections, and include a revision diagram."
+            />
+          </label>
+        </fieldset>
         <label className="study-consent">
           <input
             type="checkbox"
@@ -399,7 +542,19 @@ function UploadForm({
     </section>
   );
 }
-export function Learning({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => void }) {
+export function Learning({
+  onDirtyChange,
+  initialFile,
+  onInitialSourceUsed,
+  theme,
+  onThemeChange,
+}: {
+  onDirtyChange: (dirty: boolean) => void;
+  initialFile?: File | null;
+  onInitialSourceUsed?: () => void;
+  theme?: string;
+  onThemeChange?: (theme: string) => void;
+}) {
   const [config, setConfig] = useState<LearningConfig | null>(null),
     [list, setList] = useState<LearningSummary[]>([]),
     [session, setSession] = useState<LearningSession | null>(null),
@@ -694,7 +849,14 @@ export function Learning({ onDirtyChange }: { onDirtyChange: (dirty: boolean) =>
       )}
       {!session ? (
         <div className="study-start">
-          <UploadForm config={config} onCreated={created} />
+          <UploadForm
+            config={config}
+            initialFile={initialFile}
+            onCreated={(s) => {
+              onInitialSourceUsed?.();
+              created(s);
+            }}
+          />
           <aside className="study-library">
             <h2>Saved learning sessions</h2>
             <p className="muted">
@@ -890,6 +1052,7 @@ export function Learning({ onDirtyChange }: { onDirtyChange: (dirty: boolean) =>
                   ['diagrams', 'Diagrams'],
                   ['tutor', 'AI tutor'],
                   ['revision', 'Revision'],
+                  ['checklist', 'Checklist'],
                   ['export', 'Export'],
                 ].map(([k, label]) => (
                   <Button key={k} aria-pressed={tab === k} onClick={() => setTab(k)}>
@@ -904,6 +1067,9 @@ export function Learning({ onDirtyChange }: { onDirtyChange: (dirty: boolean) =>
               )}
               {tab === 'source' && (
                 <SourcesView session={session} selected={source} setSelected={setSource} />
+              )}
+              {tab === 'checklist' && (
+                <StudyChecklist key={session.id} session={session} onSource={citation} />
               )}
               {tab === 'notes' && (
                 <NotesView
@@ -1066,6 +1232,19 @@ export function Learning({ onDirtyChange }: { onDirtyChange: (dirty: boolean) =>
           </Button>
         </div>
       </Dialog>
+      <WorkspaceAssistant
+        key={session?.id ?? 'empty'}
+        session={session}
+        disabled={busy || !ready || !enabled}
+        onChange={(a) => {
+          change(a);
+          setTab('diagrams');
+        }}
+        onQuestion={(question) => action('chat', { question, diagram: false })}
+        theme={theme ?? 'light'}
+        onThemeChange={onThemeChange}
+        onSource={citation}
+      />
       <Dialog open={Boolean(pending)} title="Leave unsaved edits?" onClose={() => setPending(null)}>
         <p>Your latest edits have not been saved.</p>
         <div className="study-toolbar">

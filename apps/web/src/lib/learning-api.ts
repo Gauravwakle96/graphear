@@ -5,6 +5,8 @@ import {
   optionsSchema,
   tutorSchema,
   validateAnalysis,
+  studyDiagramSchema,
+  validateDiagram,
 } from '@graphear/core';
 import { apiRequest, ensureSession, workspaceHeaders } from './api';
 const sessionSchema = z.object({
@@ -135,6 +137,27 @@ export async function learningAction(id: string, action: string, body: unknown =
       signal: AbortSignal.timeout(310_000),
     }),
   );
+}
+export async function learningDiagramPreview(
+  s: LearningSession,
+  instruction: string,
+  diagramId?: string,
+) {
+  await ensureSession();
+  const result = z
+    .object({ diagram: studyDiagramSchema, revision: z.number().int().positive() })
+    .strict()
+    .parse(
+      await apiRequest(`/learning/${s.id}/diagram-preview`, {
+        method: 'POST',
+        body: JSON.stringify({ instruction, diagramId, revision: s.revision }),
+        signal: AbortSignal.timeout(310000),
+      }),
+    );
+  return {
+    ...result,
+    diagram: validateDiagram(result.diagram, new Set(s.sources.map((src) => src.id))),
+  };
 }
 export async function learningSave(s: LearningSession) {
   await ensureSession();

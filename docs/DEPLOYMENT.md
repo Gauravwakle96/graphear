@@ -98,7 +98,7 @@ compatible-provider and subsequent Gemini deployments retained the current hostn
 TXT/subtitle upload, transcript attachment and mobile/desktop checks passed;
 the original saved learning record's digest was unchanged after those checks.
 
-Current demo limits are 20 MB per upload, five-minute recordings and 20 reserved
+Current demo limits are 20 MB per upload, five-minute recordings and 50 reserved
 AI calls per application day. Failed requests and corrections consume the call
 budget. These conservative demo limits differ from the larger defaults in
 `.env.example`. Both saved PDFs and a public text lesson succeeded with Gemini.

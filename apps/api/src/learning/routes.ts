@@ -320,6 +320,27 @@ export function learningRouter(
       next(e);
     }
   });
+  router.post('/:id/diagram-preview', async (req, res, next) => {
+    try {
+      const s = owned(req, res.locals.owner);
+      if (!s) return res.sendStatus(404);
+      const body = z
+        .object({
+          instruction: z.string().trim().min(1).max(2000),
+          diagramId: z.string().max(80).optional(),
+          revision: z.number().int().positive(),
+        })
+        .strict()
+        .parse(req.body);
+      if (body.revision !== s.revision)
+        return res
+          .status(409)
+          .json({ error: 'Session changed; reload before requesting an AI edit' });
+      res.json(await service.diagramPreview(s, body.instruction, body.diagramId));
+    } catch (e) {
+      next(e);
+    }
+  });
   router.post('/:id/questions', async (req, res, next) => {
     try {
       const s = owned(req, res.locals.owner);

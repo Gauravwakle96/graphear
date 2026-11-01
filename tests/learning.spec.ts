@@ -4,6 +4,64 @@ import { testAnalysis, testSources } from '../packages/core/src/study.test-suppo
 import type { LearningSession } from '../apps/web/src/lib/learning-api';
 import { gradeStudyTest } from '../packages/core/src/study';
 const fixtureId = '6a29e291-4855-412f-9dc3-e6db567b6a77';
+test('AI changes stay in preview until accepted and explicitly saved', async ({ page }) => {
+  const completed = session();
+  const initial = { ...completed, status: 'failed' as string, analysis: null } as LearningSession;
+  await prepared(page, initial);
+  initial.status = 'completed';
+  initial.analysis = completed.analysis;
+  await page.route(`**/api/learning/${fixtureId}/process`, (route) =>
+    route.fulfill({ json: initial }),
+  );
+  await page.getByRole('button', { name: 'Retry processing', exact: true }).click();
+  await expect(page.getByRole('heading', { name: completed.analysis!.title })).toBeVisible();
+  let requests = 0,
+    saves = 0;
+  page.on('request', (request) => {
+    if (request.method() === 'PATCH' && request.url().endsWith(`/api/learning/${fixtureId}`))
+      saves++;
+  });
+  await page.route(`**/api/learning/${fixtureId}/diagram-preview`, (route) => {
+    requests++;
+    const body = route.request().postDataJSON();
+    expect(body.revision).toBe(1);
+    expect(body.diagramId).toBe(initial.analysis!.diagrams[0].id);
+    const diagram = structuredClone(initial.analysis!.diagrams[0]);
+    diagram.title = 'Synthetic simplified proposal';
+    return route.fulfill({ json: { diagram, revision: 1 } });
+  });
+  await page.getByRole('button', { name: 'Open AI workspace assistant' }).click();
+  await page.getByLabel('AI action', { exact: true }).selectOption('edit');
+  await page.getByLabel('Your request', { exact: true }).fill('Make this easier to understand');
+  await page.getByRole('button', { name: 'Generate diagram preview', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Synthetic simplified proposal' })).toBeVisible();
+  await page.getByRole('button', { name: 'Discard preview', exact: true }).click();
+  await expect(
+    page.getByRole('heading', { name: 'Synthetic simplified proposal' }),
+  ).not.toBeVisible();
+  await page.getByRole('button', { name: 'Generate diagram preview', exact: true }).click();
+  await page.getByRole('button', { name: 'Apply to workspace', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Synthetic simplified proposal' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Save changes', exact: true })).toBeEnabled();
+  expect(requests).toBe(2);
+  expect(saves).toBe(0);
+  await page.getByRole('button', { name: 'Save changes', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Save changes', exact: true })).toBeDisabled();
+  expect(saves).toBe(1);
+});
+test('source-linked checklists retain progress and larger reading stays accessible', async ({
+  page,
+}) => {
+  await prepared(page);
+  await page.getByLabel('Reading size', { exact: true }).selectOption('larger');
+  await expect(page.locator('.study-notes')).toHaveClass(/reading-larger/);
+  await page.getByRole('button', { name: 'Checklist', exact: true }).click();
+  await page.locator('.checklist-point input').first().check();
+  await expect(page.getByRole('status').filter({ hasText: /1 of/ })).toBeVisible();
+  await page.getByRole('button', { name: 'Notes', exact: true }).click();
+  await page.getByRole('button', { name: 'Checklist', exact: true }).click();
+  await expect(page.locator('.checklist-point input').first()).toBeChecked();
+});
 test('offers an explicit text-only retry without claiming original figure reconstruction', async ({
   page,
 }) => {

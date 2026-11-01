@@ -2,6 +2,130 @@
   max-width: 1440px;
   padding-bottom: 28px;
 }
+.study-outline {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 20px;
+  margin: 26px 0;
+  padding: 20px;
+  background: var(--subtle);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+.study-outline a {
+  font-size: 0.875rem;
+  text-decoration: none;
+  padding: 6px;
+  overflow-wrap: anywhere;
+}
+.study-note-points {
+  padding-left: 24px;
+}
+.study-note-points > li::marker {
+  color: var(--accent);
+}
+.study-note-points > li {
+  padding-left: 8px;
+}
+.study-notes.reading-large .study-note-item p {
+  font-size: 1.15rem;
+}
+.study-notes.reading-larger .study-note-item p {
+  font-size: 1.3rem;
+}
+.study-checklist {
+  max-width: 850px;
+  margin-inline: auto;
+}
+.study-checklist > ul {
+  list-style: none;
+  padding: 0;
+}
+.study-checklist li {
+  border-bottom: 1px solid var(--line);
+  padding: 18px 0;
+}
+.learning-page label.checklist-point {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  line-height: 1.8;
+  font-weight: 400;
+}
+.checklist-point input {
+  margin-top: 5px;
+  flex: 0 0 20px;
+  width: 20px;
+  height: 20px;
+  accent-color: var(--accent);
+}
+.checklist-point .badge {
+  display: block;
+  width: fit-content;
+  margin-top: 8px;
+}
+.assistant-dialog {
+  width: min(680px, calc(100vw - 32px));
+}
+.assistant-dialog label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 18px 0;
+  font-weight: 600;
+}
+.assistant-dialog textarea {
+  width: 100%;
+  resize: vertical;
+  font: inherit;
+  line-height: 1.7;
+}
+.assistant-answer,
+.assistant-preview {
+  padding: 20px;
+  margin-top: 22px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--subtle);
+}
+.assistant-answer p,
+.assistant-preview p {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.assistant-preview ul {
+  max-height: 230px;
+  overflow: auto;
+}
+.study-upload {
+  border-top: 4px solid var(--accent);
+}
+.study-session {
+  box-shadow: 0 8px 30px #00000006;
+}
+.study-session-heading {
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--line);
+}
+.study-tabs {
+  border-top: 0;
+  position: sticky;
+  top: 0;
+  background: var(--surface);
+  z-index: 2;
+}
+@media (max-width: 600px) {
+  .study-outline {
+    grid-template-columns: 1fr;
+    padding: 14px;
+  }
+  .study-tabs {
+    position: static;
+  }
+  .assistant-dialog {
+    padding: 20px;
+  }
+}
 .learning-page .page-heading {
   display: flex;
   align-items: flex-start;
@@ -88,9 +212,84 @@
   color: var(--accent);
 }
 .study-start {
-  display: grid;
-  grid-template-columns: minmax(0, 1.6fr) minmax(260px, 1fr);
+  display: flex;
+  flex-direction: column;
   gap: 28px;
+}
+.study-start .study-upload > h2 {
+  text-align: center;
+  font-size: 1.65rem;
+  margin-bottom: 12px;
+}
+.study-start .study-upload > p {
+  margin-inline: auto;
+  text-align: center;
+}
+.study-start .study-upload > .mode-switch {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  padding: 6px;
+  background: var(--subtle);
+  border-radius: 12px;
+  gap: 4px;
+}
+.study-start .study-upload form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.study-start .study-upload form > * {
+  grid-column: 1/-1;
+  min-width: 0;
+}
+.study-start .study-upload form > fieldset {
+  grid-column: auto;
+}
+.study-start .study-dropzone {
+  background: var(--surface);
+  border-color: var(--line);
+  border-radius: 14px;
+  min-height: 190px;
+  justify-content: center;
+}
+.study-start .study-library {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  background: transparent;
+  border: 0;
+  padding-inline: 0;
+}
+.study-start .study-library > h2,
+.study-start .study-library > p,
+.study-start .study-library-empty {
+  grid-column: 1/-1;
+}
+.study-start .study-session-row {
+  padding: 20px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  border-radius: 10px;
+}
+.study-start .study-session-row:hover {
+  border-color: var(--accent);
+  background: var(--sage);
+}
+@media (max-width: 850px) {
+  .study-start .study-library {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .study-start .study-upload form {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 600px) {
+  .study-start .study-library {
+    grid-template-columns: 1fr;
+  }
+  .study-start .study-upload > h2 {
+    font-size: 1.3rem;
+  }
 }
 .study-upload,
 .study-library,

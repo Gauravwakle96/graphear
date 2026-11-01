@@ -6,9 +6,11 @@ Graphear joins source review, keyboard exploration, editable graph structure, ve
 
 ## AI learning upgrade
 
-The **Learning** area adds private multimodal uploads, actual configurable OpenAI/Gemini adapters, source-linked notes and diagrams, tutoring, revision practice and exports alongside the existing local workspace. A backend API key is required for AI processing; none is configured by default. Live AI accuracy has not yet been verified.
+The **Learning** studio adds private multimodal uploads, real configurable AI providers, source-linked notes, typed diagrams, tutoring, quizzes, timed tests and exports. Choose diagram detail, point-based notes and custom instructions; review AI diagram proposals before explicitly saving them. Study and application-process checklists retain progress on your device. The supplied NoteGPT reference informs its converter and library layout while preserving Graphear's accessible workspace.
 
-See [setup and architecture](docs/AI_LEARNING.md), [evaluation](docs/LEARNING_EVALUATION.md) and [implementation report](docs/AI_IMPLEMENTATION_REPORT.md).
+A backend API key is required; none ships with the repository. The current free demo uses Gemini. Actual PDF/text generation is verified in bounded cases; representative educational accuracy remains subject to source review.
+
+See [setup and architecture](docs/AI_LEARNING.md), [the new workspace workflow](docs/AI_WORKSPACE_UPGRADE.md), [evaluation](docs/LEARNING_EVALUATION.md) and [implementation report](docs/AI_IMPLEMENTATION_REPORT.md).
 
 ## What works
 
